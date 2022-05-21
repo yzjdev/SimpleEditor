@@ -24,6 +24,7 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
     float tabWidth,spaceWidth,lineHeight;
     float maxLineWidth;
     float lineNumberOffset=40;
+    boolean isFixedLineNumber=true;
 
     Scroller scroller;
     ScaleGestureDetector scaleGestureDetector;
@@ -68,38 +69,45 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         this.canvas = canvas;
+        //可视行
         int startLine=(int)Math.max(0, getCurrY() / lineHeight);
         int endLine=(int)Math.min(getLineCount(), Math.ceil((getCurrY() + getHeight()) / lineHeight));
         float x=0;
         float y=0;
-        float[] widths;
-        char[] cs=new char[2];
-        int count=1;
 
         for (int i=startLine;i < endLine;i++) {
             x = getLineNumberWidth();
+            //文本基线
             y = i * lineHeight - fontMetrics.ascent;
             String text=content.getText(i);
-            widths = new float[text.length()];
+            if (text.length() > 1000)
+                continue;
+            float[] widths = new float[text.length()];
             paint.getTextWidths(text, widths);
 
             //开始绘制文本
             paint.setTextAlign(Paint.Align.LEFT);
             int color;
+            char[] cs=new char[2];
+            int count=1;
+
             for (int j=0;j < widths.length;j += count) {
                 color = Color.BLACK;
                 char c=text.charAt(j);
                 if (c == ' ') {
+                    //处理空格
                     c = '·';
                     color = Color.LTGRAY;
-                }
-                if (c == '\t') {
+                } else if (c == '\t') {
+                    //处理tab
                     widths[j] = tabWidth;
                 }
 
                 cs[0] = c;
                 count = 1;
-                if (Character.isHighSurrogate(c) && (j + 1) < widths.length) {
+
+                //处理表情，仅支持两个char的表情
+                if (Character.isHighSurrogate(c) && (j + 1) < text.length()) {
                     c = text.charAt(j + 1);
                     if (Character.isLowSurrogate(c)) {
                         cs[1] = c;
@@ -107,24 +115,32 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
                     }   
                 }
                 paint.setColor(color);
-                canvas.drawText(cs, 0, count, x, y, paint);
+                canvas.drawText(cs, 0, count, x , y, paint);
                 x += widths[j];
             }
-            if (x > maxLineWidth)
+
+            if (x > maxLineWidth)//行最大宽度
                 maxLineWidth = x;
 
-            float a=getCurrX() + getLineNumberWidth() - lineNumberOffset / 2;
+            float l=isFixedLineNumber ?getCurrX(): 0;
+            float t=i * lineHeight;
+            float r=l + getLineNumberWidth() - lineNumberOffset / 2;
+            float b=t + lineHeight;
             //绘制行号背景
             paint.setColor(Color.WHITE);
-            canvas.drawRect(getCurrX(), i * lineHeight, a, (i + 1) * lineHeight, paint);
+            canvas.drawRect(l, t, r, b, paint);
             //绘制分割线
+           
+            float ax=r;
+            float ay=t;
+            float bx=ax;
+            float by=b;
             paint.setColor(Color.LTGRAY);
-            canvas.drawLine(a, i*lineHeight, a, (i+1)*lineHeight, paint);
+            canvas.drawLine(ax,ay,bx,by, paint);
             //绘制行号
             paint.setTextAlign(Paint.Align.RIGHT);
-            canvas.drawText(String.valueOf(i + 1), getLineNumberWidth() - lineNumberOffset + getCurrX(), y, paint);
-
-
+            ax-=lineNumberOffset/2;
+            canvas.drawText(String.valueOf(i + 1), ax, y, paint);
         }
     }
 
@@ -146,7 +162,7 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
     }
 
     public float getContentWidth() {
-        return Math.max(getWidth(), maxLineWidth);
+        return maxLineWidth;
     }
 
     public float getContentHeight() {
@@ -159,6 +175,23 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
 
     public int getCurrY() {
         return scroller.getCurrY();
+    }
+
+    private float[] getTextWidths(String text) {
+        float[] widths=new float[text.length()];
+        paint.getTextWidths(text, widths);
+        return widths;
+    }
+
+    private float getTextWidth(String text) {
+        float[] widths=getTextWidths(text);
+        float width=0;
+        for (int i=0;i < widths.length;i++) {
+            if (text.charAt(i) == '\t')
+                widths[i] = tabWidth;
+            width += widths[i];
+        }
+        return width;
     }
 
     public float getLineNumberWidth() {
