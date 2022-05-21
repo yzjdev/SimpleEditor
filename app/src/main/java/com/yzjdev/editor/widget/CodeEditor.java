@@ -51,6 +51,7 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
         imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
 
         content = new Content(this);
+        
         paint = new Paint();
         paint.setAntiAlias(true);
         paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, DEFAULT_TEXT_SIZE, context.getResources().getDisplayMetrics()));
@@ -80,7 +81,7 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
             //文本基线
             y = i * lineHeight - fontMetrics.ascent;
             String text=content.getText(i);
-            if (text.length() > 1000)
+            if (text.length() > 1000)//文本超长则不绘制，防止App崩溃
                 continue;
             float[] widths = new float[text.length()];
             paint.getTextWidths(text, widths);
@@ -122,15 +123,14 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
             if (x > maxLineWidth)//行最大宽度
                 maxLineWidth = x;
 
+            //绘制行号背景
             float l=isFixedLineNumber ?getCurrX(): 0;
             float t=i * lineHeight;
             float r=l + getLineNumberWidth() - lineNumberOffset / 2;
             float b=t + lineHeight;
-            //绘制行号背景
             paint.setColor(Color.WHITE);
             canvas.drawRect(l, t, r, b, paint);
             //绘制分割线
-           
             float ax=r;
             float ay=t;
             float bx=ax;
@@ -138,8 +138,8 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
             paint.setColor(Color.LTGRAY);
             canvas.drawLine(ax,ay,bx,by, paint);
             //绘制行号
-            paint.setTextAlign(Paint.Align.RIGHT);
             ax-=lineNumberOffset/2;
+            paint.setTextAlign(Paint.Align.RIGHT);
             canvas.drawText(String.valueOf(i + 1), ax, y, paint);
         }
     }
@@ -210,6 +210,10 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
         if (!hasFocus())
             requestFocus();
         imm.showSoftInput(this, 0);
+    }
+    
+    public void setFixedLineNumber(boolean z){
+        isFixedLineNumber=z;
     }
 
     /** 重写方法 手势 输入法 Scroller
