@@ -35,6 +35,7 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
     float lineNumberOffset=40;
     boolean isFixedLineNumber=true;
 
+    EditableInputConnection inputConnection;
     EventManager eventManager;
     KeyMetaStates keyMetaStates;
     Selection selection;
@@ -59,6 +60,7 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
         super(context, attrs);
         this.context = context;
 
+        inputConnection=new EditableInputConnection(this);
         eventManager=new EventManager();
         keyMetaStates=new KeyMetaStates(this);
         selection=new Selection();
@@ -407,7 +409,7 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-        return super.onCreateInputConnection(outAttrs);
+        return inputConnection;
     }
 
     @Override

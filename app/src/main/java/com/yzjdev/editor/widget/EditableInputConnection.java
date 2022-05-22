@@ -25,6 +25,17 @@ public class EditableInputConnection extends BaseInputConnection{
     public ExtractedText getExtractedText(ExtractedTextRequest request, int flags) {
         return super.getExtractedText(request, flags);
     }
+
+    @Override
+    public CharSequence getTextBeforeCursor(int length, int flags) {
+        return "a";
+    }
+
+    @Override
+    public CharSequence getTextAfterCursor(int length, int flags) {
+        return "a";
+    }
+    
     
     
 }
