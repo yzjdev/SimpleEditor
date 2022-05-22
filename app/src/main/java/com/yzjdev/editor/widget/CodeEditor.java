@@ -8,6 +8,7 @@ import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -15,7 +16,15 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Scroller;
+import com.yzjdev.editor.scheme.ColorScheme;
+import com.yzjdev.editor.scheme.DefalutColorScheme;
 import com.yzjdev.editor.text.Content;
+import com.yzjdev.editor.text.Cursor;
+import com.yzjdev.editor.text.Selection;
+import io.github.rosemoe.sora.event.EditorKeyEvent;
+import io.github.rosemoe.sora.event.InterceptTarget;
+import io.github.rosemoe.sora.event.EventManager;
+import android.widget.Toast;
 
 public class CodeEditor extends View implements GestureDetector.OnGestureListener,ScaleGestureDetector.OnScaleGestureListener {
 
@@ -26,6 +35,11 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
     float lineNumberOffset=40;
     boolean isFixedLineNumber=true;
 
+    EventManager eventManager;
+    KeyMetaStates keyMetaStates;
+    Selection selection;
+    Cursor cursor;
+    ColorScheme colorScheme;
     Scroller scroller;
     ScaleGestureDetector scaleGestureDetector;
     GestureDetector gestureDetector;
@@ -45,6 +59,11 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
         super(context, attrs);
         this.context = context;
 
+        eventManager=new EventManager();
+        keyMetaStates=new KeyMetaStates(this);
+        selection=new Selection();
+        cursor=new Cursor(this);
+        colorScheme=new DefalutColorScheme();
         scroller = new Scroller(context);
         scaleGestureDetector = new ScaleGestureDetector(context, this);
         gestureDetector = new GestureDetector(context, this);
@@ -77,9 +96,17 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
         float y=0;
 
         for (int i=startLine;i < endLine;i++) {
+            
+        
             x = getLineNumberWidth();
             //文本基线
             y = i * lineHeight - fontMetrics.ascent;
+            
+            if(cursor.line==i){
+                paint.setColor(colorScheme.getColor(ColorScheme.COLOR_LINE_CURRENT));
+                canvas.drawRect(0,i*lineHeight,getCurrX()+getWidth(),i*lineHeight+lineHeight,paint);
+            }
+            
             String text=content.getText(i);
             if (text.length() > 1000)//文本超长则不绘制，防止App崩溃
                 continue;
@@ -216,9 +243,12 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
         isFixedLineNumber=z;
     }
 
+    public KeyMetaStates getKeyMetaStates(){
+        return keyMetaStates;
+    }
+
     /** 重写方法 手势 输入法 Scroller
      */
-
     @Override
     public void computeScroll() {
         super.computeScroll();
@@ -228,6 +258,152 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
 		}
     }
 
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+
+        keyMetaStates.onKeyDown(event);
+        EditorKeyEvent e = new EditorKeyEvent(this, event);
+        if ((eventManager.dispatchEvent(e) & InterceptTarget.TARGET_EDITOR) != 0) {
+            return e.result(false);
+        }
+        boolean isShiftPressed = keyMetaStates.isShiftPressed();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+            case KeyEvent.KEYCODE_DPAD_UP:
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case KeyEvent.KEYCODE_MOVE_HOME:
+            case KeyEvent.KEYCODE_MOVE_END:
+                /*
+                if (isShiftPressed && (!mCursor.isSelected())) {
+                    mSelectionAnchor = mCursor.left();
+                } else if (!isShiftPressed && mSelectionAnchor != null) {
+                    mSelectionAnchor = null;
+                }*/
+                keyMetaStates.adjust();
+                
+        }
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DEL:
+                if (isEditable()) {
+                    //deleteText();
+                    //notifyIMEExternalCursorChange();
+                }
+                return e.result(true);
+            
+            case KeyEvent.KEYCODE_ENTER: {
+                    if (isEditable()) {
+                    }
+                    return e.result(true);
+                }
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+
+                Toast.makeText(getContext(),isShiftPressed+"",0).show();
+              //  moveSelectionDown();
+                return e.result(true);
+            case KeyEvent.KEYCODE_DPAD_UP:
+                Toast.makeText(getContext(),isShiftPressed+"",0).show();
+               // moveSelectionUp();
+                return e.result(true);
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                Toast.makeText(getContext(),isShiftPressed+"",0).show();
+               // moveSelectionLeft();
+                return e.result(true);
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                Toast.makeText(getContext(),isShiftPressed+"",0).show();
+               // moveSelectionRight();
+                return e.result(true);
+            case KeyEvent.KEYCODE_MOVE_END:
+               // moveSelectionEnd();
+                return e.result(true);
+            case KeyEvent.KEYCODE_MOVE_HOME:
+               // moveSelectionHome();
+                return e.result(true);
+            case KeyEvent.KEYCODE_PAGE_DOWN:
+               // movePageDown();
+                return e.result(true);
+            case KeyEvent.KEYCODE_PAGE_UP:
+               // movePageUp();
+                return e.result(true);
+            case KeyEvent.KEYCODE_TAB:
+                if (isEditable()) {
+                    
+                }
+                return e.result(true);
+            case KeyEvent.KEYCODE_PASTE:
+                if (isEditable()) {
+                  //  pasteText();
+                }
+                return e.result(true);
+            case KeyEvent.KEYCODE_COPY:
+              //  copyText();
+                return e.result(true);
+            case KeyEvent.KEYCODE_SPACE:
+                if (isEditable()) {
+                   // commitText(" ");
+                   // notifyIMEExternalCursorChange();
+                }
+                return e.result(true);
+            default:
+                if (event.isCtrlPressed() && !event.isAltPressed()) {
+                    switch (keyCode) {
+                        case KeyEvent.KEYCODE_V:
+                            if (isEditable()) {
+                             //   pasteText();
+                            }
+                            return e.result(true);
+                        case KeyEvent.KEYCODE_C:
+                         //   copyText();
+                            return e.result(true);
+                        case KeyEvent.KEYCODE_X:
+                            /*
+                            if (isEditable()) {
+                               cutText();
+                            } else {
+                                copyText();
+                            }*/
+                            return e.result(true);
+                        case KeyEvent.KEYCODE_A:
+                           // selectAll();
+                            return e.result(true);
+                        case KeyEvent.KEYCODE_Z:
+                            if (isEditable()) {
+                               // undo();
+                            }
+                            return e.result(true);
+                        case KeyEvent.KEYCODE_Y:
+                            if (isEditable()) {
+                               // redo();
+                            }
+                            return e.result(true);
+                    }
+                } else if (!event.isCtrlPressed() && !event.isAltPressed()) {
+                    if (event.isPrintingKey() && isEditable()) {
+                        
+                    } else {
+                        return super.onKeyDown(keyCode, event);
+                    }
+                    return e.result(true);
+                }
+        }
+        
+        return e.result(super.onKeyDown(keyCode, event));
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        keyMetaStates.onKeyUp(event);
+        EditorKeyEvent e = new EditorKeyEvent(this, event);
+        if ((eventManager.dispatchEvent(e) & InterceptTarget.TARGET_EDITOR) != 0) {
+            return e.result(false);
+        }
+        /*
+        if (!keyMetaStates.isShiftPressed() && mSelectionAnchor != null && !mCursor.isSelected()) {
+            mSelectionAnchor = null;
+            return e.result(true);
+        }*/
+        return e.result(super.onKeyUp(keyCode, event));
+    }
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {

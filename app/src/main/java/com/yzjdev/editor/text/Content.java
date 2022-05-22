@@ -25,24 +25,42 @@ public class Content implements CharSequence {
         } catch (BadLocationException e) {}
         return 0;
     }
+    
+    public int getLineEnd(int line){
+        return getLineStart(line)+length(line);
+    }
 
     public int length(int line) {
+        try {
+            String delimiter=doc.getLineDelimiter(line);
+            return lengthWithDelimiter(line) - (delimiter == null ?0: delimiter.length());
+        } catch (BadLocationException e) {}
+        return 0;
+    }
+    public int lengthWithDelimiter(int line) {
         try {
             return doc.getLineLength(line);
         } catch (BadLocationException e) {}
         return 0;
     }
 
+
     public String getText(int line) {
         try {
-            String delimiter=doc.getLineDelimiter(line);
-            return doc.get(doc.getLineOffset(line), doc.getLineLength(line) - (delimiter == null ?0: delimiter.length()));
+            return doc.get(doc.getLineOffset(line), length(line));
         } catch (BadLocationException e) {}
         return null;
     }
 
     public int getLineCount() {
         return doc.getNumberOfLines();
+    }
+    
+    public int getLine(int pos){
+        try {
+            return doc.getLineOfOffset(pos);
+        } catch (BadLocationException e) {}
+        return 0;
     }
 
     @Override
