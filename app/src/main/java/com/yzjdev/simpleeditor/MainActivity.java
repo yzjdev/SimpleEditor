@@ -15,7 +15,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         editor=findViewById(R.id.editor);
         String str=FileUtils.readAssets(this,"View.java");
-        editor.setText("123\t456");
+        editor.setText(str);
     }
 
 	@Override

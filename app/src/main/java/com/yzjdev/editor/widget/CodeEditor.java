@@ -112,12 +112,19 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         float y=0;
 
 
-		int line=content.getLine(cursor.pos);
-		paint.setColor(colorScheme.getColor(ColorScheme.COLOR_LINE_CURRENT));
-		canvas.drawRect(0, line * lineHeight, getCurrX() + getWidth(), line * lineHeight + lineHeight, paint);
+		if (!selection.isBatchEdit()) {
 
-		if (showCursor) {
+			int line=content.getLine(cursor.pos);
+			paint.setColor(colorScheme.getColor(ColorScheme.COLOR_LINE_CURRENT));
+			canvas.drawRect(0, line * lineHeight, getCurrX() + getWidth(), line * lineHeight + lineHeight, paint);
+
+		}
+
+		if (showCursor && !selection.isBatchEdit()) {
+
+
 			int pos=cursor.pos;
+			int line=content.getLine(pos);
 			String text=content.getText(line);
 			float[] widths=getTextWidths(text);
 			float w=getLineNumberWidth();
@@ -130,12 +137,76 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 			paint.setColor(Color.BLUE);
 			canvas.drawLine(w, line * lineHeight, w, (line + 1) * lineHeight, paint);
 		}
+
+
+		int lineStart,lineEnd;
+		int selectionStart=selection.getSelectionStart();
+		int selectionEnd=selection.getSelectionEnd();
+		if (selection.isBatchEdit()) {
+
+			float startX=getX(selectionStart);
+			float startY=getY(selectionStart);
+			float endX=getX(selectionEnd);
+			float endY=getY(selectionEnd);
+			paint.setColor(Color.BLUE);
+			paint.setStrokeWidth(6);
+			canvas.drawLine(startX, startY, startX, startY + lineHeight, paint);
+			canvas.drawLine(endX, endY, endX, endY + lineHeight, paint);
+
+		}
         for (int i=startLine;i < endLine;i++) {
 
 
             x = getLineNumberWidth();
             //文本基线
             y = i * lineHeight - fontMetrics.ascent;
+
+			if (selection.isBatchEdit()) {
+
+				lineStart = content.getLineStart(i);
+				lineEnd = content.getLineEnd(i);
+				if (lineStart >= selectionStart && lineEnd <= selectionEnd) {
+					paint.setColor(Color.LTGRAY);
+					canvas.drawRect(x, i * lineHeight, x + getTextWidth(content.getText(i)), (i + 1) * lineHeight, paint);
+				}  else if (lineStart < selectionStart && lineEnd > selectionEnd) {
+					String text=content.getText(i);
+					float[] widths=getTextWidths(text);
+					float o=getLineNumberWidth();
+					for (int l=0;l < selectionStart - lineStart;l++) {
+						o += widths[l];
+					}
+					float st=o;
+					o=getLineNumberWidth();
+					for (int l=0;l < selectionEnd - lineStart;l++) {
+						o += widths[l];
+					}
+					float en=o;
+					paint.setColor(Color.LTGRAY);
+					canvas.drawRect(st, i * lineHeight, en, (i + 1) * lineHeight, paint);
+
+				}
+				else if (lineStart < selectionStart && lineEnd > selectionStart) {
+					String text=content.getText(i);
+					float[] widths=getTextWidths(text);
+					float o=getLineNumberWidth();
+					for (int l=0;l < selectionStart - lineStart;l++) {
+						o += widths[l];
+					}
+					paint.setColor(Color.LTGRAY);
+					canvas.drawRect(o, i * lineHeight, o + getTextWidth(content.getText(i)), (i + 1) * lineHeight, paint);
+
+				} else if (lineStart < selectionEnd && lineEnd > selectionEnd) {
+					String text=content.getText(i);
+					float[] widths=getTextWidths(text);
+					float o=getLineNumberWidth();
+					for (int l=0;l < selectionEnd - lineStart;l++) {
+						o += widths[l];
+					}
+					paint.setColor(Color.LTGRAY);
+					canvas.drawRect(x, i * lineHeight, o, (i + 1) * lineHeight, paint);
+
+				}
+			}
 
 
             String text=content.getText(i);
@@ -256,6 +327,23 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return scroller.getCurrY();
     }
 
+	public float getX(int pos) {
+		int line=content.getLine(pos);
+		String text=content.getText(line);
+		float[] widths=getTextWidths(text);
+		int lineStart=content.getLineStart(line);
+		float x=getLineNumberWidth();
+		for (int i=0;i < pos - lineStart;i++) {
+			if (text.charAt(i) == '\t')
+				widths[i] = tabWidth;
+			x += widths[i];
+		}
+		return x;
+	}
+
+	public float getY(int pos) {
+		return content.getLine(pos) * lineHeight;
+	}
     private float[] getTextWidths(String text) {
         float[] widths=new float[text.length()];
         paint.getTextWidths(text, widths);
@@ -341,12 +429,12 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
             case KeyEvent.KEYCODE_DPAD_RIGHT:
             case KeyEvent.KEYCODE_MOVE_HOME:
             case KeyEvent.KEYCODE_MOVE_END:
-                /*
-				 if (isShiftPressed && (!mCursor.isSelected())) {
-				 mSelectionAnchor = mCursor.left();
-				 } else if (!isShiftPressed && mSelectionAnchor != null) {
-				 mSelectionAnchor = null;
-				 }*/
+
+				if (isShiftPressed && !selection.isBatchEdit()) {
+					selection.beginBatchEdit();
+				} else if (!isShiftPressed) {
+					selection.endBatchEdit();
+				}
                 keyMetaStates.adjust();
 
         }
