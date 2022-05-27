@@ -22,11 +22,22 @@ import com.yzjdev.editor.text.Content;
 import com.yzjdev.editor.text.Cursor;
 import com.yzjdev.editor.text.Selection;
 import io.github.rosemoe.sora.event.EditorKeyEvent;
-import io.github.rosemoe.sora.event.InterceptTarget;
 import io.github.rosemoe.sora.event.EventManager;
-import android.widget.Toast;
+import io.github.rosemoe.sora.event.InterceptTarget;
+import org.eclipse.jface.text.DocumentEvent;
+import org.eclipse.jface.text.IDocumentListener;
 
-public class CodeEditor extends View implements GestureDetector.OnGestureListener,ScaleGestureDetector.OnScaleGestureListener {
+public class CodeEditor extends View implements IDocumentListener, GestureDetector.OnGestureListener,ScaleGestureDetector.OnScaleGestureListener {
+
+	@Override
+	public void documentAboutToBeChanged(DocumentEvent event) {
+	}
+
+	@Override
+	public void documentChanged(DocumentEvent event) {
+		
+	}
+	
 
 
     public static final float DEFAULT_TEXT_SIZE=20f;
@@ -34,7 +45,7 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
     float maxLineWidth;
     float lineNumberOffset=40;
     boolean isFixedLineNumber=true;
-
+	boolean showCursor=true;
     EditableInputConnection inputConnection;
     EventManager eventManager;
     KeyMetaStates keyMetaStates;
@@ -85,6 +96,8 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
 
         setFocusable(true);
         setFocusableInTouchMode(true);
+		content.addDocumentListener(this);
+		cursor.startBlink(0);
     }
 
     @Override
@@ -171,6 +184,14 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
             paint.setTextAlign(Paint.Align.RIGHT);
             canvas.drawText(String.valueOf(i + 1), ax, y, paint);
         }
+		
+
+		if(showCursor){
+			paint.setStrokeWidth(6);
+			paint.setColor(Color.BLUE);
+			canvas.drawLine(getLineNumberWidth(),0,getLineNumberWidth(),lineHeight,paint);
+		}
+		paint.setStrokeWidth(0);
     }
 
 
@@ -244,6 +265,14 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
     public void setFixedLineNumber(boolean z){
         isFixedLineNumber=z;
     }
+	public void showCursor(boolean z){
+		showCursor=z;
+		invalidate();
+	}
+	
+	public boolean isShowCursor(){
+		return showCursor;
+	}
 
     public KeyMetaStates getKeyMetaStates(){
         return keyMetaStates;
@@ -299,20 +328,20 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
                     return e.result(true);
                 }
             case KeyEvent.KEYCODE_DPAD_DOWN:
+				cursor.stopBlink();
 
-                Toast.makeText(getContext(),isShiftPressed+"",0).show();
               //  moveSelectionDown();
                 return e.result(true);
             case KeyEvent.KEYCODE_DPAD_UP:
-                Toast.makeText(getContext(),isShiftPressed+"",0).show();
+				cursor.stopBlink();
                // moveSelectionUp();
                 return e.result(true);
             case KeyEvent.KEYCODE_DPAD_LEFT:
-                Toast.makeText(getContext(),isShiftPressed+"",0).show();
+				cursor.stopBlink();
                // moveSelectionLeft();
                 return e.result(true);
             case KeyEvent.KEYCODE_DPAD_RIGHT:
-                Toast.makeText(getContext(),isShiftPressed+"",0).show();
+				cursor.stopBlink();
                // moveSelectionRight();
                 return e.result(true);
             case KeyEvent.KEYCODE_MOVE_END:
@@ -399,6 +428,14 @@ public class CodeEditor extends View implements GestureDetector.OnGestureListene
         if ((eventManager.dispatchEvent(e) & InterceptTarget.TARGET_EDITOR) != 0) {
             return e.result(false);
         }
+		switch(keyCode){
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+			case KeyEvent.KEYCODE_DPAD_UP:
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+				cursor.startBlink(1000);
+				break;
+		}
         /*
         if (!keyMetaStates.isShiftPressed() && mSelectionAnchor != null && !mCursor.isSelected()) {
             mSelectionAnchor = null;

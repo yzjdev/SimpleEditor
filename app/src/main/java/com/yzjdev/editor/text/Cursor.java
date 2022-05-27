@@ -1,5 +1,7 @@
 package com.yzjdev.editor.text;
 import com.yzjdev.editor.widget.CodeEditor;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Cursor {
 
@@ -28,4 +30,26 @@ public class Cursor {
     public int getRight() {
         return pos;
     }
+	
+	
+	Timer timer;
+	TimerTask task;
+	public void startBlink(long delay){
+		task = new TimerTask(){
+
+			@Override
+			public void run() {
+				editor.showCursor(!editor.isShowCursor());
+			}
+		};
+		timer=new Timer();
+		timer.scheduleAtFixedRate(task,delay,500);
+	}
+	
+	public void stopBlink(){
+		timer.cancel();
+		timer.purge();
+		timer=null;
+		editor.showCursor(true);
+	}
 }

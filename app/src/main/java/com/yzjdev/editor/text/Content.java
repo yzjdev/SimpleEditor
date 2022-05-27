@@ -5,18 +5,23 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.BadLocationException;
 import android.widget.Toast;
 import android.text.TextUtils;
+import org.eclipse.jface.text.IDocumentListener;
 
 public class Content implements CharSequence {
 
     Document doc;
     CodeEditor editor;
     public Content(CodeEditor editor) {
-        doc = new Document();
         this.editor = editor;
+        doc = new Document();
     }
 
+	public void addDocumentListener(IDocumentListener l){
+		doc.addDocumentListener(l);
+	}
     public void setText(CharSequence text) {
         doc.set(text.toString());
+		
     }
 
     public int getLineStart(int line) {
