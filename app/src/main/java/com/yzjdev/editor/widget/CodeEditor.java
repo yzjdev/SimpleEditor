@@ -16,6 +16,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Scroller;
+import android.widget.Toast;
 import com.yzjdev.editor.scheme.ColorScheme;
 import com.yzjdev.editor.scheme.DefalutColorScheme;
 import com.yzjdev.editor.text.Content;
@@ -35,16 +36,16 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
 	@Override
 	public void documentChanged(DocumentEvent event) {
-		
+
 	}
-	
+
 
 
     public static final float DEFAULT_TEXT_SIZE=20f;
     float tabWidth,spaceWidth,lineHeight;
     float maxLineWidth;
     float lineNumberOffset=40;
-    boolean isFixedLineNumber=true;
+    boolean isFixedLineNumber;
 	boolean showCursor=true;
     EditableInputConnection inputConnection;
     EventManager eventManager;
@@ -71,19 +72,19 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         super(context, attrs);
         this.context = context;
 
-        inputConnection=new EditableInputConnection(this);
-        eventManager=new EventManager();
-        keyMetaStates=new KeyMetaStates(this);
-        selection=new Selection();
-        cursor=new Cursor(this);
-        colorScheme=new DefalutColorScheme();
+        inputConnection = new EditableInputConnection(this);
+        eventManager = new EventManager();
+        keyMetaStates = new KeyMetaStates(this);
+        selection = new Selection(this);
+        cursor = new Cursor(this);
+        colorScheme = new DefalutColorScheme();
         scroller = new Scroller(context);
         scaleGestureDetector = new ScaleGestureDetector(context, this);
         gestureDetector = new GestureDetector(context, this);
         imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
 
         content = new Content(this);
-        
+
         paint = new Paint();
         paint.setAntiAlias(true);
         paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, DEFAULT_TEXT_SIZE, context.getResources().getDisplayMetrics()));
@@ -110,18 +111,33 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         float x=0;
         float y=0;
 
+
+		int line=content.getLine(cursor.pos);
+		paint.setColor(colorScheme.getColor(ColorScheme.COLOR_LINE_CURRENT));
+		canvas.drawRect(0, line * lineHeight, getCurrX() + getWidth(), line * lineHeight + lineHeight, paint);
+
+		if (showCursor) {
+			int pos=cursor.pos;
+			String text=content.getText(line);
+			float[] widths=getTextWidths(text);
+			float w=getLineNumberWidth();
+			for (int i=0;i < pos - content.getLineStart(line);i++) {
+				if (text.charAt(i) == '\t')
+					widths[i] = tabWidth;
+				w += widths[i];
+			}
+			paint.setStrokeWidth(6);
+			paint.setColor(Color.BLUE);
+			canvas.drawLine(w, line * lineHeight, w, (line + 1) * lineHeight, paint);
+		}
         for (int i=startLine;i < endLine;i++) {
-            
-        
+
+
             x = getLineNumberWidth();
             //文本基线
             y = i * lineHeight - fontMetrics.ascent;
-            
-            if(cursor.line==i){
-                paint.setColor(colorScheme.getColor(ColorScheme.COLOR_LINE_CURRENT));
-                canvas.drawRect(0,i*lineHeight,getCurrX()+getWidth(),i*lineHeight+lineHeight,paint);
-            }
-            
+
+
             String text=content.getText(i);
             if (text.length() > 1000)//文本超长则不绘制，防止App崩溃
                 continue;
@@ -177,23 +193,36 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
             float ay=t;
             float bx=ax;
             float by=b;
+			paint.setStrokeWidth(0);
             paint.setColor(Color.LTGRAY);
-            canvas.drawLine(ax,ay,bx,by, paint);
+            canvas.drawLine(ax, ay, bx, by, paint);
             //绘制行号
-            ax-=lineNumberOffset/2;
+            ax -= lineNumberOffset / 2;
             paint.setTextAlign(Paint.Align.RIGHT);
             canvas.drawText(String.valueOf(i + 1), ax, y, paint);
         }
-		
 
-		if(showCursor){
-			paint.setStrokeWidth(6);
-			paint.setColor(Color.BLUE);
-			canvas.drawLine(getLineNumberWidth(),0,getLineNumberWidth(),lineHeight,paint);
-		}
-		paint.setStrokeWidth(0);
+
     }
 
+	public void delete() {
+		replace(cursor.pos - 1, 1, "");
+	}
+	public void insert(CharSequence text) {
+		insert(cursor.pos, text);
+	}
+	public void insert(int pos, CharSequence text) {
+		replace(pos, 0, text);
+	}
+	public void replace(int pos, int length, CharSequence text) {
+		if (content.replace(pos, length, text.toString())) {
+			cursor.pos = pos + text.length();
+			invalidate();
+		}
+	}
+	public Cursor getCursor() {
+		return cursor;
+	}
 
     public void setText(CharSequence text) {
         content.setText(text);
@@ -212,7 +241,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     }
 
     public float getContentWidth() {
-        return maxLineWidth;
+        return Math.max(getWidth(), maxLineWidth);
     }
 
     public float getContentHeight() {
@@ -256,25 +285,32 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return onCheckIsTextEditor() && isEnabled();
     }
 
+	public int length() {
+		return content.length();
+	}
     public void showSoftInput() {
         if (!hasFocus())
             requestFocus();
         imm.showSoftInput(this, 0);
     }
-    
-    public void setFixedLineNumber(boolean z){
-        isFixedLineNumber=z;
+
+    public void setFixedLineNumber(boolean z) {
+        isFixedLineNumber = z;
+		invalidate();
     }
-	public void showCursor(boolean z){
-		showCursor=z;
+	public boolean isFixedLineNumber() {
+		return isFixedLineNumber;
+	}
+	public void showCursor(boolean z) {
+		showCursor = z;
 		invalidate();
 	}
-	
-	public boolean isShowCursor(){
+
+	public boolean isShowCursor() {
 		return showCursor;
 	}
 
-    public KeyMetaStates getKeyMetaStates(){
+    public KeyMetaStates getKeyMetaStates() {
         return keyMetaStates;
     }
 
@@ -306,118 +342,104 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
             case KeyEvent.KEYCODE_MOVE_HOME:
             case KeyEvent.KEYCODE_MOVE_END:
                 /*
-                if (isShiftPressed && (!mCursor.isSelected())) {
-                    mSelectionAnchor = mCursor.left();
-                } else if (!isShiftPressed && mSelectionAnchor != null) {
-                    mSelectionAnchor = null;
-                }*/
+				 if (isShiftPressed && (!mCursor.isSelected())) {
+				 mSelectionAnchor = mCursor.left();
+				 } else if (!isShiftPressed && mSelectionAnchor != null) {
+				 mSelectionAnchor = null;
+				 }*/
                 keyMetaStates.adjust();
-                
+
         }
+		switch (keyCode) {
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+			case KeyEvent.KEYCODE_DPAD_UP:
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case KeyEvent.KEYCODE_DEL:
+			case KeyEvent.KEYCODE_ENTER:
+				cursor.stopBlink();
+				break;
+		}
         switch (keyCode) {
             case KeyEvent.KEYCODE_DEL:
-                if (isEditable()) {
-                    //deleteText();
-                    //notifyIMEExternalCursorChange();
-                }
+                if (isEditable())
+					delete();
                 return e.result(true);
-            
-            case KeyEvent.KEYCODE_ENTER: {
-                    if (isEditable()) {
-                    }
-                    return e.result(true);
-                }
+            case KeyEvent.KEYCODE_ENTER:
+				if (isEditable()) 
+					insert("\n");
+				return e.result(true);
             case KeyEvent.KEYCODE_DPAD_DOWN:
-				cursor.stopBlink();
-
-              //  moveSelectionDown();
+				selection.selectDown();
                 return e.result(true);
             case KeyEvent.KEYCODE_DPAD_UP:
-				cursor.stopBlink();
-               // moveSelectionUp();
+				selection.selectUp();
                 return e.result(true);
             case KeyEvent.KEYCODE_DPAD_LEFT:
-				cursor.stopBlink();
-               // moveSelectionLeft();
+				selection.selectLeft();
                 return e.result(true);
             case KeyEvent.KEYCODE_DPAD_RIGHT:
-				cursor.stopBlink();
-               // moveSelectionRight();
-                return e.result(true);
-            case KeyEvent.KEYCODE_MOVE_END:
-               // moveSelectionEnd();
-                return e.result(true);
-            case KeyEvent.KEYCODE_MOVE_HOME:
-               // moveSelectionHome();
-                return e.result(true);
-            case KeyEvent.KEYCODE_PAGE_DOWN:
-               // movePageDown();
-                return e.result(true);
-            case KeyEvent.KEYCODE_PAGE_UP:
-               // movePageUp();
+				selection.selectRight();
                 return e.result(true);
             case KeyEvent.KEYCODE_TAB:
-                if (isEditable()) {
-                    
-                }
+                if (isEditable()) 
+					insert("\t");
                 return e.result(true);
             case KeyEvent.KEYCODE_PASTE:
                 if (isEditable()) {
-                  //  pasteText();
+					//  pasteText();
                 }
                 return e.result(true);
             case KeyEvent.KEYCODE_COPY:
-              //  copyText();
+				//  copyText();
                 return e.result(true);
             case KeyEvent.KEYCODE_SPACE:
-                if (isEditable()) {
-                   // commitText(" ");
-                   // notifyIMEExternalCursorChange();
-                }
+                if (isEditable()) 
+					insert(" ");
                 return e.result(true);
             default:
                 if (event.isCtrlPressed() && !event.isAltPressed()) {
                     switch (keyCode) {
                         case KeyEvent.KEYCODE_V:
                             if (isEditable()) {
-                             //   pasteText();
+								//   pasteText();
                             }
                             return e.result(true);
                         case KeyEvent.KEYCODE_C:
-                         //   copyText();
+							//   copyText();
                             return e.result(true);
                         case KeyEvent.KEYCODE_X:
                             /*
-                            if (isEditable()) {
-                               cutText();
-                            } else {
-                                copyText();
-                            }*/
+							 if (isEditable()) {
+							 cutText();
+							 } else {
+							 copyText();
+							 }*/
                             return e.result(true);
                         case KeyEvent.KEYCODE_A:
-                           // selectAll();
+							// selectAll();
                             return e.result(true);
                         case KeyEvent.KEYCODE_Z:
                             if (isEditable()) {
-                               // undo();
+								// undo();
                             }
                             return e.result(true);
                         case KeyEvent.KEYCODE_Y:
                             if (isEditable()) {
-                               // redo();
+								// redo();
                             }
                             return e.result(true);
                     }
                 } else if (!event.isCtrlPressed() && !event.isAltPressed()) {
                     if (event.isPrintingKey() && isEditable()) {
-                        
+
                     } else {
                         return super.onKeyDown(keyCode, event);
                     }
                     return e.result(true);
                 }
         }
-        
+
         return e.result(super.onKeyDown(keyCode, event));
     }
 
@@ -428,19 +450,21 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         if ((eventManager.dispatchEvent(e) & InterceptTarget.TARGET_EDITOR) != 0) {
             return e.result(false);
         }
-		switch(keyCode){
+		switch (keyCode) {
 			case KeyEvent.KEYCODE_DPAD_LEFT:
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
 			case KeyEvent.KEYCODE_DPAD_UP:
 			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case KeyEvent.KEYCODE_DEL:
+			case KeyEvent.KEYCODE_ENTER:
 				cursor.startBlink(1000);
 				break;
 		}
         /*
-        if (!keyMetaStates.isShiftPressed() && mSelectionAnchor != null && !mCursor.isSelected()) {
-            mSelectionAnchor = null;
-            return e.result(true);
-        }*/
+		 if (!keyMetaStates.isShiftPressed() && mSelectionAnchor != null && !mCursor.isSelected()) {
+		 mSelectionAnchor = null;
+		 return e.result(true);
+		 }*/
         return e.result(super.onKeyUp(keyCode, event));
     }
 

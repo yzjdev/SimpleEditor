@@ -23,6 +23,14 @@ public class Content implements CharSequence {
         doc.set(text.toString());
 		
     }
+	
+	public boolean replace(int pos,int length,String text){
+		try {
+			doc.replace(pos, length, text);
+			return true;
+		} catch (BadLocationException e) {}
+		return false;
+	}
 
     public int getLineStart(int line) {
         try {

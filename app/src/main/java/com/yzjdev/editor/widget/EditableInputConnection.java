@@ -13,7 +13,8 @@ public class EditableInputConnection extends BaseInputConnection{
 
     @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
-        return super.commitText(text, newCursorPosition);
+		editor.insert(text);
+        return true;
     }
 
     @Override

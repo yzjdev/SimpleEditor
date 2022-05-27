@@ -21,7 +21,14 @@ public class Cursor {
         this.line=line;
         this.column=column;
     }
+	
+	public void toLeft(){
+		pos--;
+	}
     
+	public void toRight(){
+		pos++;
+	}
     public int getLeft() {
         int left=pos - 1;
         return left < 0 ?0: left;
@@ -47,9 +54,11 @@ public class Cursor {
 	}
 	
 	public void stopBlink(){
-		timer.cancel();
-		timer.purge();
-		timer=null;
+		if(timer!=null){
+			timer.cancel();
+			timer.purge();
+			timer=null;
+		}
 		editor.showCursor(true);
 	}
 }
