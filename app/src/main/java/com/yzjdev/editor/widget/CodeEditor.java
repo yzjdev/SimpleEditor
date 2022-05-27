@@ -167,7 +167,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 				lineEnd = content.getLineEnd(i);
 				if (lineStart >= selectionStart && lineEnd <= selectionEnd) {
 					paint.setColor(Color.LTGRAY);
-					canvas.drawRect(x, i * lineHeight, x + getTextWidth(content.getText(i)), (i + 1) * lineHeight, paint);
+					canvas.drawRoundRect(x, i * lineHeight, x + getTextWidth(content.getText(i)), (i + 1) * lineHeight, 8,8,paint);
 				}  else if (lineStart < selectionStart && lineEnd > selectionEnd) {
 					String text=content.getText(i);
 					float[] widths=getTextWidths(text);
@@ -182,7 +182,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 					}
 					float en=o;
 					paint.setColor(Color.LTGRAY);
-					canvas.drawRect(st, i * lineHeight, en, (i + 1) * lineHeight, paint);
+					canvas.drawRoundRect(st, i * lineHeight, en, (i + 1) * lineHeight,8,8,paint);
 
 				}
 				else if (lineStart < selectionStart && lineEnd > selectionStart) {
@@ -193,7 +193,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 						o += widths[l];
 					}
 					paint.setColor(Color.LTGRAY);
-					canvas.drawRect(o, i * lineHeight, o + getTextWidth(content.getText(i)), (i + 1) * lineHeight, paint);
+					canvas.drawRoundRect(o, i * lineHeight,x+ getTextWidth(content.getText(i)), (i + 1) * lineHeight,8,8, paint);
 
 				} else if (lineStart < selectionEnd && lineEnd > selectionEnd) {
 					String text=content.getText(i);
@@ -203,7 +203,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 						o += widths[l];
 					}
 					paint.setColor(Color.LTGRAY);
-					canvas.drawRect(x, i * lineHeight, o, (i + 1) * lineHeight, paint);
+					canvas.drawRoundRect(x, i * lineHeight, o, (i + 1) * lineHeight, 8,8,paint);
 
 				}
 			}

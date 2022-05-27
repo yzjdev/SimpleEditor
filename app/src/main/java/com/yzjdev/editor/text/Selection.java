@@ -21,7 +21,7 @@ public class Selection {
 		pos--;
 
 		if (!isBatchEdit) {
-			start = end = cursor.pos = pos;
+			start = end = cursor.pos =start!=end?end: pos;
 		} else {
 			end = pos;
 		}
@@ -35,7 +35,7 @@ public class Selection {
 
 		pos++;
 		if (!isBatchEdit) {
-			start = end = cursor.pos = pos;
+			start = end = cursor.pos =start!=end?end: pos;
 		} else {
 			end = pos;
 		}
@@ -58,7 +58,7 @@ public class Selection {
 		}
 		if (!isBatchEdit) {
 
-			start = end = cursor.pos = pos;
+			start = end = cursor.pos = start!=end?end:pos;
 		} else {
 			end = pos;
 		}
@@ -81,7 +81,7 @@ public class Selection {
 		}
 		if (!isBatchEdit) {
 
-			start = end = cursor.pos = pos;
+			start = end = cursor.pos =start!=end?end: pos;
 		} else {
 			end = pos;
 		}
