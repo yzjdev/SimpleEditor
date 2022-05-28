@@ -80,7 +80,6 @@ public class Selection {
 			pos = content.getLineStart(nextLine) + Math.min(offset, content.length(nextLine));
 		}
 		if (!isBatchEdit) {
-
 			start = end = cursor.pos =start!=end?end: pos;
 		} else {
 			end = pos;
@@ -94,6 +93,7 @@ public class Selection {
 
 	public void endBatchEdit() {
 		isBatchEdit = false;
+		start=end=editor.getCursor().pos;
 		editor.invalidate();
 	}
 
@@ -110,4 +110,9 @@ public class Selection {
 		return Math.max(start, end);
 	}
 
+	public int length(){
+		return Math.abs(end-start);
+	}
+	
+	
 }

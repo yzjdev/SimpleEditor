@@ -167,7 +167,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 				lineEnd = content.getLineEnd(i);
 				if (lineStart >= selectionStart && lineEnd <= selectionEnd) {
 					paint.setColor(Color.LTGRAY);
-					canvas.drawRoundRect(x, i * lineHeight, x + getTextWidth(content.getText(i)), (i + 1) * lineHeight, 8,8,paint);
+					canvas.drawRoundRect(x, i * lineHeight, x + getTextWidth(content.getText(i)), (i + 1) * lineHeight, 8, 8, paint);
 				}  else if (lineStart < selectionStart && lineEnd > selectionEnd) {
 					String text=content.getText(i);
 					float[] widths=getTextWidths(text);
@@ -176,16 +176,15 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 						o += widths[l];
 					}
 					float st=o;
-					o=getLineNumberWidth();
+					o = getLineNumberWidth();
 					for (int l=0;l < selectionEnd - lineStart;l++) {
 						o += widths[l];
 					}
 					float en=o;
 					paint.setColor(Color.LTGRAY);
-					canvas.drawRoundRect(st, i * lineHeight, en, (i + 1) * lineHeight,8,8,paint);
+					canvas.drawRoundRect(st, i * lineHeight, en, (i + 1) * lineHeight, 8, 8, paint);
 
-				}
-				else if (lineStart < selectionStart && lineEnd > selectionStart) {
+				} else if (lineStart < selectionStart && lineEnd > selectionStart) {
 					String text=content.getText(i);
 					float[] widths=getTextWidths(text);
 					float o=getLineNumberWidth();
@@ -193,7 +192,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 						o += widths[l];
 					}
 					paint.setColor(Color.LTGRAY);
-					canvas.drawRoundRect(o, i * lineHeight,x+ getTextWidth(content.getText(i)), (i + 1) * lineHeight,8,8, paint);
+					canvas.drawRoundRect(o, i * lineHeight, x + getTextWidth(content.getText(i)), (i + 1) * lineHeight, 8, 8, paint);
 
 				} else if (lineStart < selectionEnd && lineEnd > selectionEnd) {
 					String text=content.getText(i);
@@ -203,7 +202,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 						o += widths[l];
 					}
 					paint.setColor(Color.LTGRAY);
-					canvas.drawRoundRect(x, i * lineHeight, o, (i + 1) * lineHeight, 8,8,paint);
+					canvas.drawRoundRect(x, i * lineHeight, o, (i + 1) * lineHeight, 8, 8, paint);
 
 				}
 			}
@@ -277,7 +276,13 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     }
 
 	public void delete() {
-		replace(cursor.pos - 1, 1, "");
+		if (selection.isBatchEdit())
+			delete(selection.getSelectionStart(), selection.length());
+		else
+			delete(cursor.pos - 1, 1);
+	}
+	public void delete(int pos, int length) {
+		replace(pos, length, "");
 	}
 	public void insert(CharSequence text) {
 		insert(cursor.pos, text);
@@ -288,6 +293,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 	public void replace(int pos, int length, CharSequence text) {
 		if (content.replace(pos, length, text.toString())) {
 			cursor.pos = pos + text.length();
+			selection.endBatchEdit();
 			invalidate();
 		}
 	}
