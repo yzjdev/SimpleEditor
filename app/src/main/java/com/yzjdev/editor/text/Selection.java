@@ -93,7 +93,7 @@ public class Selection {
 
 	public void endBatchEdit() {
 		isBatchEdit = false;
-		start=end=editor.getCursor().pos;
+		editor.getCursor().pos=start=end;
 		editor.invalidate();
 	}
 
