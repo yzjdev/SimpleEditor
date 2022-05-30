@@ -39,6 +39,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
 	@Override
 	public void documentChanged(DocumentEvent event) {
+		//cursor.scrollToVisible();
 
 	}
 
@@ -296,7 +297,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 	public void replace(int pos, int length, CharSequence text) {
 		if (content.replace(pos, length, text.toString())) {
 			cursor.pos = pos + text.length();
-			selection.endBatchEdit();
+			//selection.endBatchEdit();
 			invalidate();
 		}
 	}
