@@ -2,11 +2,11 @@ package com.yzjdev.editor.text;
 import com.yzjdev.editor.widget.CodeEditor;
 
 public class Selection {
-
     CodeEditor editor;
 	int start=0;
 	int end=0;
-	boolean isBatchEdit;
+
+    private int nestedBatchEdit;
 	public Selection(CodeEditor editor) {
 		this.editor = editor;
 	}
@@ -15,35 +15,37 @@ public class Selection {
 
 	public void selectLeft() {
 		Cursor cursor=editor.getCursor();
-		int pos=isBatchEdit ?end: cursor.pos;
+		int pos=isBatchEdit() ?end: cursor.pos;
 		if (pos <= 0)
 			return;
 		pos--;
 
-		if (!isBatchEdit) {
+		if (!isBatchEdit()) {
 			start = end = cursor.pos =start!=end?end: pos;
 		} else {
 			end = pos;
 		}
+		editor.getCursor().scrollToVisible();
 	}
 
 	public void selectRight() {
 		Cursor cursor=editor.getCursor();
-		int pos=isBatchEdit ?end: cursor.pos;
+		int pos=isBatchEdit() ?end: cursor.pos;
 		if (pos >= editor.length())
 			return;
 
 		pos++;
-		if (!isBatchEdit) {
+		if (!isBatchEdit()) {
 			start = end = cursor.pos =start!=end?end: pos;
 		} else {
 			end = pos;
 		}
+		editor.getCursor().scrollToVisible();
 	}
 
 	public void selectUp() {
 		Cursor cursor=editor.getCursor();
-		int pos=isBatchEdit ?end: cursor.pos;
+		int pos=isBatchEdit() ?end: cursor.pos;
 		if (pos <= 0)
 			return;
 		Content content=(Content) editor.getText();
@@ -56,17 +58,18 @@ public class Selection {
 			int nextLine=line - 1;
 			pos = content.getLineStart(nextLine) + Math.min(offset, content.length(nextLine));
 		}
-		if (!isBatchEdit) {
+		if (!isBatchEdit()) {
 
 			start = end = cursor.pos = start!=end?end:pos;
 		} else {
 			end = pos;
 		}
+		editor.getCursor().scrollToVisible();
 	}
 
 	public void selectDown() {
 		Cursor cursor=editor.getCursor();
-		int pos=isBatchEdit ?end: cursor.pos;
+		int pos=isBatchEdit() ?end: cursor.pos;
 		if (pos >= editor.length())
 			return;
 		Content content=(Content) editor.getText();
@@ -79,26 +82,30 @@ public class Selection {
 			int nextLine=line + 1;
 			pos = content.getLineStart(nextLine) + Math.min(offset, content.length(nextLine));
 		}
-		if (!isBatchEdit) {
+		if (!isBatchEdit()) {
 			start = end = cursor.pos =start!=end?end: pos;
 		} else {
 			end = pos;
 		}
+		editor.getCursor().scrollToVisible();
 	}
 
-	public void beginBatchEdit() {
-		isBatchEdit = true;
-		editor.invalidate();
+	public boolean beginBatchEdit() {
+		nestedBatchEdit++;
+        return isBatchEdit();
 	}
 
-	public void endBatchEdit() {
-		isBatchEdit = false;
+	public boolean endBatchEdit() {
 		editor.getCursor().pos=start=end;
-		editor.invalidate();
+		nestedBatchEdit--;
+        if (nestedBatchEdit < 0) {
+            nestedBatchEdit = 0;
+        }
+        return isBatchEdit();
 	}
 
 	public boolean isBatchEdit() {
-		return isBatchEdit;
+		return nestedBatchEdit > 0;
 	}
 
 	public int getSelectionStart() {
@@ -114,5 +121,10 @@ public class Selection {
 		return Math.abs(end-start);
 	}
 	
+	public void setSelection(int start,int end){
+		this.start=start;
+		this.end=end;
+		
+	}
 	
 }

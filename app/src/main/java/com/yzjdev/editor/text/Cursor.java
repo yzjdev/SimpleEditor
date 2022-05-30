@@ -2,6 +2,7 @@ package com.yzjdev.editor.text;
 import com.yzjdev.editor.widget.CodeEditor;
 import java.util.Timer;
 import java.util.TimerTask;
+import android.widget.Toast;
 
 public class Cursor {
 
@@ -60,5 +61,37 @@ public class Cursor {
 			timer=null;
 		}
 		editor.showCursor(true);
+	}
+	
+	
+	public void scrollToVisible(){
+		float x=editor.getX(pos)-editor.getLineNumberWidth();
+		float y=editor.getY(pos);
+		int width=editor.getWidth();
+		int height=editor.getHeight();
+		int currX=editor.getCurrX();
+		int currY=editor.getCurrY();
+		
+		int dx=0;
+		int dy=0;
+
+
+			
+		if(x-currX+editor.getLineNumberWidth()+200>width){
+			dx=(int)(x-width-currX+editor.getLineNumberWidth()+200);
+		}else if(x-currX<0){
+			dx=(int)(x-currX);
+		}
+
+
+		if(y-currY+editor.getLineHeight()>height){
+			dy=(int)(y-height-currY+editor.getLineHeight());
+		}else if(y-currY<0){
+			dy=(int)(y-currY);
+		}
+			
+		editor.getScroller().startScroll(currX,currY,dx,dy);
+		editor.invalidate();
+		//Toast.makeText(editor.getContext(),(x-currX>width)+"",0).show();
 	}
 }

@@ -1,5 +1,7 @@
 package com.yzjdev.editor.widget;
 
+import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -13,10 +15,11 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.ExtractedText;
+import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Scroller;
-import android.widget.Toast;
 import com.yzjdev.editor.scheme.ColorScheme;
 import com.yzjdev.editor.scheme.DefalutColorScheme;
 import com.yzjdev.editor.text.Content;
@@ -47,7 +50,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     float lineNumberOffset=40;
     boolean isFixedLineNumber;
 	boolean showCursor=true;
-    EditableInputConnection inputConnection;
+    EditorInputConnection inputConnection;
     EventManager eventManager;
     KeyMetaStates keyMetaStates;
     Selection selection;
@@ -72,7 +75,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         super(context, attrs);
         this.context = context;
 
-        inputConnection = new EditableInputConnection(this);
+        inputConnection = new EditorInputConnection(this);
         eventManager = new EventManager();
         keyMetaStates = new KeyMetaStates(this);
         selection = new Selection(this);
@@ -116,7 +119,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
 			int line=content.getLine(cursor.pos);
 			paint.setColor(colorScheme.getColor(ColorScheme.COLOR_LINE_CURRENT));
-			canvas.drawRect(0, line * lineHeight, getCurrX() + getWidth(), line * lineHeight + lineHeight, paint);
+			canvas.drawRect(0, line * lineHeight, getScrollX() + getWidth(), line * lineHeight + lineHeight, paint);
 
 		}
 
@@ -297,6 +300,10 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 			invalidate();
 		}
 	}
+	
+	public float getLineHeight(){
+		return lineHeight;
+	}
 	public Cursor getCursor() {
 		return cursor;
 	}
@@ -310,7 +317,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     }
 
     public int getMaxX() {
-        return (int)(getContentWidth() - getWidth());
+        return 200+ (int)(getContentWidth() - getWidth());
     }
 
     public int getMaxY() {
@@ -332,6 +339,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     public int getCurrY() {
         return scroller.getCurrY();
     }
+
 
 	public float getX(int pos) {
 		int line=content.getLine(pos);
@@ -379,6 +387,9 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return onCheckIsTextEditor() && isEnabled();
     }
 
+	public Scroller getScroller(){
+		return scroller;
+	}
 	public int length() {
 		return content.length();
 	}
@@ -408,6 +419,50 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return keyMetaStates;
     }
 
+	ExtractedTextRequest mExtracting;
+	/**
+     * Set request needed to update when editor updates selection
+     */
+    protected void setExtracting(@Nullable ExtractedTextRequest request) {
+        mExtracting = request;
+    }
+
+    /**
+     * Extract text in editor for input method
+     */
+    protected ExtractedText extractText(@NonNull ExtractedTextRequest request) {
+        Cursor cur = getCursor();
+        ExtractedText text = new ExtractedText();
+        int selBegin = cur.getLeft();
+        int selEnd = cur.getRight();
+        int startOffset;
+        if (request.hintMaxChars == 0) {
+            request.hintMaxChars = 50000000;
+        }
+        startOffset = 0;
+        text.text = inputConnection.getTextRegion(startOffset, startOffset + request.hintMaxChars, request.flags);
+        text.startOffset = startOffset;
+        text.selectionStart = selBegin - startOffset;
+        text.selectionEnd = selEnd - startOffset;
+        if (selBegin != selEnd) {
+            text.flags |= ExtractedText.FLAG_SELECTING;
+        }
+        return text;
+    }
+	
+	protected void onCloseConnection() {
+        setExtracting(null);
+        invalidate();
+    }
+	
+	protected void updateSelection() {
+        int candidatesStart = -1, candidatesEnd = -1;
+        
+        imm.updateSelection(this, cursor.getLeft(), cursor.getRight(), candidatesStart, candidatesEnd);
+        Thread.dumpStack();
+    }
+	
+	
     /** 重写方法 手势 输入法 Scroller
      */
     @Override
@@ -564,6 +619,12 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+		outAttrs.initialSelStart = getCursor() != null ? getCursor().getLeft() : 0;
+        outAttrs.initialSelEnd = getCursor() != null ? getCursor().getRight() : 0;
+        outAttrs.initialCapsMode = inputConnection.getCursorCapsMode(0);
+		
+		inputConnection.reset();
+		setExtracting(null);
         return inputConnection;
     }
 
