@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -39,12 +40,9 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
 	@Override
 	public void documentChanged(DocumentEvent event) {
-		//cursor.scrollToVisible();
-
+		cursor.scrollToVisible();
 	}
-
-
-
+	
     public static final float DEFAULT_TEXT_SIZE=20f;
     float tabWidth,spaceWidth,lineHeight;
     float maxLineWidth;
@@ -115,18 +113,15 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         float x=0;
         float y=0;
 
-
 		if (!selection.isBatchEdit()) {
-
+			//绘制当前行背景
 			int line=content.getLine(cursor.pos);
 			paint.setColor(colorScheme.getColor(ColorScheme.COLOR_LINE_CURRENT));
 			canvas.drawRect(0, line * lineHeight, getScrollX() + getWidth(), line * lineHeight + lineHeight, paint);
-
 		}
 
 		if (showCursor && !selection.isBatchEdit()) {
-
-
+			//绘制光标
 			int pos=cursor.pos;
 			int line=content.getLine(pos);
 			String text=content.getText(line);
@@ -143,11 +138,11 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 		}
 
 
+		//绘制选择状态时start end的光标
 		int lineStart,lineEnd;
 		int selectionStart=selection.getSelectionStart();
 		int selectionEnd=selection.getSelectionEnd();
 		if (selection.isBatchEdit()) {
-
 			float startX=getX(selectionStart);
 			float startY=getY(selectionStart);
 			float endX=getX(selectionEnd);
@@ -156,69 +151,72 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 			paint.setStrokeWidth(6);
 			canvas.drawLine(startX, startY, startX, startY + lineHeight, paint);
 			canvas.drawLine(endX, endY, endX, endY + lineHeight, paint);
-
 		}
+
+		//开始绘制文本
         for (int i=startLine;i < endLine;i++) {
-
-
             x = getLineNumberWidth();
             //文本基线
             y = i * lineHeight - fontMetrics.ascent;
 
+			//绘制选中区域背景
+			//共有四种情况 1.[] 2.() 3.(] 4.[)
+			RectF rectf=new RectF();
+			rectf.top = i * lineHeight;
+			rectf.bottom = rectf.top + lineHeight;
 			if (selection.isBatchEdit()) {
-
 				lineStart = content.getLineStart(i);
 				lineEnd = content.getLineEnd(i);
 				if (lineStart >= selectionStart && lineEnd <= selectionEnd) {
-					paint.setColor(Color.LTGRAY);
-					canvas.drawRoundRect(x, i * lineHeight, x + getTextWidth(content.getText(i)), (i + 1) * lineHeight, 8, 8, paint);
+					//当前行在选中区域内[]
+					rectf.left = x;
+					if (content.length(i) == 0) {
+						rectf.right = rectf.left + 6;
+					} else {
+						rectf.right = rectf.left + getTextWidth(content.getText(i));
+					}
 				}  else if (lineStart < selectionStart && lineEnd > selectionEnd) {
-					String text=content.getText(i);
-					float[] widths=getTextWidths(text);
-					float o=getLineNumberWidth();
+					//选择开始和结束在当前行内()
+					float[] widths=getTextWidths(content.getText(i));
+					float st=getLineNumberWidth();
 					for (int l=0;l < selectionStart - lineStart;l++) {
-						o += widths[l];
+						st += widths[l];
 					}
-					float st=o;
-					o = getLineNumberWidth();
+					float en = getLineNumberWidth();
 					for (int l=0;l < selectionEnd - lineStart;l++) {
-						o += widths[l];
+						en += widths[l];
 					}
-					float en=o;
-					paint.setColor(Color.LTGRAY);
-					canvas.drawRoundRect(st, i * lineHeight, en, (i + 1) * lineHeight, 8, 8, paint);
-
+					rectf.left = st;
+					rectf.right = en;
 				} else if (lineStart < selectionStart && lineEnd > selectionStart) {
-					String text=content.getText(i);
-					float[] widths=getTextWidths(text);
-					float o=getLineNumberWidth();
+					//选择开始在当前行，选择结束不在当前行 (]
+					float[] widths=getTextWidths(content.getText(i));
+					float st=getLineNumberWidth();
 					for (int l=0;l < selectionStart - lineStart;l++) {
-						o += widths[l];
+						st += widths[l];
 					}
-					paint.setColor(Color.LTGRAY);
-					canvas.drawRoundRect(o, i * lineHeight, x + getTextWidth(content.getText(i)), (i + 1) * lineHeight, 8, 8, paint);
-
+					rectf.left = st;
+					rectf.right = x + getTextWidth(content.getText(i));
 				} else if (lineStart < selectionEnd && lineEnd > selectionEnd) {
-					String text=content.getText(i);
-					float[] widths=getTextWidths(text);
-					float o=getLineNumberWidth();
+					//选择开始不在当前行，选择结束在当前行[)
+					float[] widths=getTextWidths(content.getText(i));
+					float en=getLineNumberWidth();
 					for (int l=0;l < selectionEnd - lineStart;l++) {
-						o += widths[l];
+						en += widths[l];
 					}
-					paint.setColor(Color.LTGRAY);
-					canvas.drawRoundRect(x, i * lineHeight, o, (i + 1) * lineHeight, 8, 8, paint);
-
+					rectf.left = x;
+					rectf.right = en;
 				}
+				paint.setColor(Color.LTGRAY);
+				canvas.drawRoundRect(rectf, 8, 8, paint);
 			}
 
 
             String text=content.getText(i);
-            if (text.length() > 1000)//文本超长则不绘制，防止App崩溃
+            if (text.length() > 1000)//文本超长没有很好的解决方式，则不绘制，防止App崩溃
                 continue;
-            float[] widths = new float[text.length()];
-            paint.getTextWidths(text, widths);
-
-            //开始绘制文本
+            float[] widths = getTextWidths(text);
+            //开始绘制文本，按char绘制
             paint.setTextAlign(Paint.Align.LEFT);
             int color;
             char[] cs=new char[2];
@@ -297,16 +295,12 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 	public void replace(int pos, int length, CharSequence text) {
 		if (content.replace(pos, length, text.toString())) {
 			cursor.pos = pos + text.length();
-			//selection.endBatchEdit();
 			invalidate();
 		}
 	}
-	
-	public float getLineHeight(){
+
+	public float getLineHeight() {
 		return lineHeight;
-	}
-	public Cursor getCursor() {
-		return cursor;
 	}
 
     public void setText(CharSequence text) {
@@ -318,7 +312,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     }
 
     public int getMaxX() {
-        return 200+ (int)(getContentWidth() - getWidth());
+		return 200 + (int)(getContentWidth() - getWidth());
     }
 
     public int getMaxY() {
@@ -341,7 +335,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return scroller.getCurrY();
     }
 
-
+	//通过光标位置计算x
 	public float getX(int pos) {
 		int line=content.getLine(pos);
 		String text=content.getText(line);
@@ -356,9 +350,13 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 		return x;
 	}
 
+
+	//通过光标位置计算y
 	public float getY(int pos) {
 		return content.getLine(pos) * lineHeight;
 	}
+
+	//获取文本长度数组
     private float[] getTextWidths(String text) {
         float[] widths=new float[text.length()];
         paint.getTextWidths(text, widths);
@@ -388,8 +386,15 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return onCheckIsTextEditor() && isEnabled();
     }
 
-	public Scroller getScroller(){
+	public Scroller getScroller() {
 		return scroller;
+	}
+	public Cursor getCursor() {
+		return cursor;
+	}
+
+	public Selection getSelection() {
+		return selection;
 	}
 	public int length() {
 		return content.length();
@@ -450,20 +455,19 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         }
         return text;
     }
-	
+
 	protected void onCloseConnection() {
         setExtracting(null);
         invalidate();
     }
-	
+
 	protected void updateSelection() {
         int candidatesStart = -1, candidatesEnd = -1;
-        
-        imm.updateSelection(this, cursor.getLeft(), cursor.getRight(), candidatesStart, candidatesEnd);
+        imm.updateSelection(this, selection.getSelectionStart(), selection.getSelectionEnd(), candidatesStart, candidatesEnd);
         Thread.dumpStack();
     }
-	
-	
+
+
     /** 重写方法 手势 输入法 Scroller
      */
     @Override
@@ -477,7 +481,6 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-
         keyMetaStates.onKeyDown(event);
         EditorKeyEvent e = new EditorKeyEvent(this, event);
         if ((eventManager.dispatchEvent(e) & InterceptTarget.TARGET_EDITOR) != 0) {
@@ -491,14 +494,12 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
             case KeyEvent.KEYCODE_DPAD_RIGHT:
             case KeyEvent.KEYCODE_MOVE_HOME:
             case KeyEvent.KEYCODE_MOVE_END:
-
 				if (isShiftPressed && !selection.isBatchEdit()) {
 					selection.beginBatchEdit();
 				} else if (!isShiftPressed) {
 					selection.endBatchEdit();
 				}
                 keyMetaStates.adjust();
-
         }
 		switch (keyCode) {
 			case KeyEvent.KEYCODE_DPAD_LEFT:
@@ -531,65 +532,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
             case KeyEvent.KEYCODE_DPAD_RIGHT:
 				selection.selectRight();
                 return e.result(true);
-            case KeyEvent.KEYCODE_TAB:
-                if (isEditable()) 
-					insert("\t");
-                return e.result(true);
-            case KeyEvent.KEYCODE_PASTE:
-                if (isEditable()) {
-					//  pasteText();
-                }
-                return e.result(true);
-            case KeyEvent.KEYCODE_COPY:
-				//  copyText();
-                return e.result(true);
-            case KeyEvent.KEYCODE_SPACE:
-                if (isEditable()) 
-					insert(" ");
-                return e.result(true);
-            default:
-                if (event.isCtrlPressed() && !event.isAltPressed()) {
-                    switch (keyCode) {
-                        case KeyEvent.KEYCODE_V:
-                            if (isEditable()) {
-								//   pasteText();
-                            }
-                            return e.result(true);
-                        case KeyEvent.KEYCODE_C:
-							//   copyText();
-                            return e.result(true);
-                        case KeyEvent.KEYCODE_X:
-                            /*
-							 if (isEditable()) {
-							 cutText();
-							 } else {
-							 copyText();
-							 }*/
-                            return e.result(true);
-                        case KeyEvent.KEYCODE_A:
-							// selectAll();
-                            return e.result(true);
-                        case KeyEvent.KEYCODE_Z:
-                            if (isEditable()) {
-								// undo();
-                            }
-                            return e.result(true);
-                        case KeyEvent.KEYCODE_Y:
-                            if (isEditable()) {
-								// redo();
-                            }
-                            return e.result(true);
-                    }
-                } else if (!event.isCtrlPressed() && !event.isAltPressed()) {
-                    if (event.isPrintingKey() && isEditable()) {
-
-                    } else {
-                        return super.onKeyDown(keyCode, event);
-                    }
-                    return e.result(true);
-                }
         }
-
         return e.result(super.onKeyDown(keyCode, event));
     }
 
@@ -610,11 +553,6 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 				cursor.startBlink(1000);
 				break;
 		}
-        /*
-		 if (!keyMetaStates.isShiftPressed() && mSelectionAnchor != null && !mCursor.isSelected()) {
-		 mSelectionAnchor = null;
-		 return e.result(true);
-		 }*/
         return e.result(super.onKeyUp(keyCode, event));
     }
 
@@ -623,7 +561,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 		outAttrs.initialSelStart = getCursor() != null ? getCursor().getLeft() : 0;
         outAttrs.initialSelEnd = getCursor() != null ? getCursor().getRight() : 0;
         outAttrs.initialCapsMode = inputConnection.getCursorCapsMode(0);
-		
+
 		inputConnection.reset();
 		setExtracting(null);
         return inputConnection;
@@ -634,6 +572,14 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return true;
     }
 
+	@Override
+	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+		super.onLayout(changed, left, top, right, bottom);
+		if(changed){
+			cursor.scrollToVisible();
+		}
+	}
+	
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         scaleGestureDetector.onTouchEvent(event);
@@ -651,15 +597,35 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
+		cursor.stopBlink();
         showSoftInput();
-        return false;
+		int line=(int)Math.min(getLineCount() - 1, ((e.getY() + getCurrY()) / lineHeight));
+		String text=content.getText(line);
+		float[] widths=getTextWidths(text);
+		float x=getLineNumberWidth();
+		int col=0;
+		for (int i=0;i < widths.length;i++) {
+			if (text.charAt(i) == '\t')
+				widths[i] = tabWidth;
+			x += widths[i];
+			if (e.getX() + getCurrX() < x) {
+				col = i;
+				break;
+			}
+		}
+		if (e.getX() + getCurrX() > x) {
+			col = widths.length;
+		}
+		cursor.set(content.getLineStart(line)+col);
+		
+		cursor.startBlink(1000);
+		return true;
     }
 
     @Override
     public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
         int dx=(int)distanceX;
         int dy=(int)distanceY;
-
         if (getCurrX() + distanceX > getMaxX()) {
             dx = getMaxX() - getCurrX();
         } else if (getCurrX() + distanceX < 0) {

@@ -10,6 +10,7 @@ import com.yzjdev.editor.text.Content;
 import com.yzjdev.editor.text.Cursor;
 import com.yzjdev.editor.text.Selection;
 import android.widget.Toast;
+import com.yzjdev.editor.utils.ToastUtils;
 
 /**
  * Connection between input method and editor
@@ -21,10 +22,6 @@ class EditorInputConnection extends BaseInputConnection {
     private final static String LOG_TAG = "EditorInputConnection";
 
     private final CodeEditor mEditor;
-    protected int mComposingLine = -1;
-    protected int mComposingStart = -1;
-    protected int mComposingEnd = -1;
-    protected boolean mImeConsumingInput = false;
     private boolean mInvalid;
 
     /**
@@ -40,7 +37,6 @@ class EditorInputConnection extends BaseInputConnection {
 
     protected void invalid() {
         mInvalid = true;
-        mComposingEnd = mComposingStart = mComposingLine = -1;
         mEditor.invalidate();
     }
 
@@ -48,9 +44,7 @@ class EditorInputConnection extends BaseInputConnection {
      * Reset the state of this connection
      */
     protected void reset() {
-        mComposingEnd = mComposingStart = mComposingLine = -1;
         mInvalid = false;
-        mImeConsumingInput = false;
     }
 
     /**
@@ -70,7 +64,6 @@ class EditorInputConnection extends BaseInputConnection {
         while (selection.isBatchEdit()) {
             selection.endBatchEdit();
         }
-        mComposingLine = mComposingEnd = mComposingStart = -1;
         mEditor.onCloseConnection();
     }
 
@@ -137,7 +130,10 @@ class EditorInputConnection extends BaseInputConnection {
 
     @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
+		mEditor.getCursor().stopBlink();
         mEditor.insert(text);
+		mEditor.getCursor().startBlink(1000);
+        
         return true;
     }
 
@@ -150,9 +146,9 @@ class EditorInputConnection extends BaseInputConnection {
     public synchronized boolean endBatchEdit() {
         boolean inBatch = mEditor.selection.endBatchEdit();
         if (!inBatch) {
-            mEditor.updateSelection();
+			//mEditor.updateSelection();
         }
-        return inBatch;
+		 return inBatch;
     }
 
 
@@ -168,7 +164,7 @@ class EditorInputConnection extends BaseInputConnection {
 
     @Override
     public boolean setSelection(int start, int end) {
-        if (!mEditor.isEditable() || mInvalid || mComposingLine != -1) {
+        if (!mEditor.isEditable() || mInvalid) {
             return false;
         }
         start = getWrappedIndex(start);
@@ -229,7 +225,6 @@ class EditorInputConnection extends BaseInputConnection {
         } else {
             mEditor.setExtracting(null);
         }
-
         return mEditor.extractText(request);
     }
 

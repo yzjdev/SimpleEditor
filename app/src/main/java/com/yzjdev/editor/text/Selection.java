@@ -3,15 +3,13 @@ import com.yzjdev.editor.widget.CodeEditor;
 
 public class Selection {
     CodeEditor editor;
-	int start=0;
-	int end=0;
+	public int start=0;
+	public int end=0;
 
     private int nestedBatchEdit;
 	public Selection(CodeEditor editor) {
 		this.editor = editor;
 	}
-
-
 
 	public void selectLeft() {
 		Cursor cursor=editor.getCursor();
@@ -59,7 +57,6 @@ public class Selection {
 			pos = content.getLineStart(nextLine) + Math.min(offset, content.length(nextLine));
 		}
 		if (!isBatchEdit()) {
-
 			start = end = cursor.pos = start!=end?end:pos;
 		} else {
 			end = pos;

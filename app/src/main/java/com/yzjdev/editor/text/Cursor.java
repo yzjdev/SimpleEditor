@@ -16,11 +16,9 @@ public class Cursor {
 
     public void set(int pos){
         this.pos=pos;
-    }
-    
-    public void set(int line,int column){
-        this.line=line;
-        this.column=column;
+		Selection sel=editor.getSelection();
+		sel.start=sel.end=pos;
+		scrollToVisible();
     }
 	
 	public void toLeft(){
@@ -31,8 +29,9 @@ public class Cursor {
 		pos++;
 	}
     public int getLeft() {
-        int left=pos - 1;
-        return left < 0 ?0: left;
+		return pos-1;
+      //  int left=pos - 1;
+        //return left < 0 ?0: left;
     }
 
     public int getRight() {
@@ -64,34 +63,28 @@ public class Cursor {
 	}
 	
 	
-	public void scrollToVisible(){
-		float x=editor.getX(pos)-editor.getLineNumberWidth();
-		float y=editor.getY(pos);
+	public void scrollToVisible(){	
+		float x=editor.getX(editor.getSelection().isBatchEdit()?editor.getSelection().end: pos)-editor.getLineNumberWidth();
+		float y=editor.getY(editor.getSelection().isBatchEdit()?editor.getSelection().end: pos);
 		int width=editor.getWidth();
 		int height=editor.getHeight();
 		int currX=editor.getCurrX();
 		int currY=editor.getCurrY();
-		
+		float lineNumberWidth=editor.getLineNumberWidth();
+		float lineHeight=editor.getLineHeight();
 		int dx=0;
-		int dy=0;
-
-
-			
-		if(x-currX+editor.getLineNumberWidth()+200>width){
-			dx=(int)(x-width-currX+editor.getLineNumberWidth()+200);
+		int dy=0;	
+		if(x-currX+lineNumberWidth+200>width){
+			dx=(int)(x-width-currX+lineNumberWidth+200);
 		}else if(x-currX<0){
 			dx=(int)(x-currX);
 		}
-
-
-		if(y-currY+editor.getLineHeight()>height){
-			dy=(int)(y-height-currY+editor.getLineHeight());
+		if(y-currY+lineHeight>height){
+			dy=(int)(y-height-currY+lineHeight);
 		}else if(y-currY<0){
 			dy=(int)(y-currY);
-		}
-			
+		}	
 		editor.getScroller().startScroll(currX,currY,dx,dy);
 		editor.invalidate();
-		//Toast.makeText(editor.getContext(),(x-currX>width)+"",0).show();
 	}
 }
