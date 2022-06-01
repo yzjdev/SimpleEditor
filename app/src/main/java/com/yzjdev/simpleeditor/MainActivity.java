@@ -15,7 +15,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         editor=findViewById(R.id.editor);
         String str=FileUtils.readAssets(this,"View.java");
-        editor.setText(str);
+        editor.setText("");
     }
 
 	@Override
@@ -31,6 +31,9 @@ public class MainActivity extends Activity {
 			case R.id.fixedLineNumber:
 				item.setChecked(!editor.isFixedLineNumber());
 				editor.setFixedLineNumber(item.isChecked());
+				break;
+			case R.id.readView:
+				editor.setText(FileUtils.readAssets(this,"View.java"));
 				break;
 		}
 		return super.onOptionsItemSelected(item);

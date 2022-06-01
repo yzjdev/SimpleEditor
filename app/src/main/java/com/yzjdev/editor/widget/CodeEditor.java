@@ -40,9 +40,8 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
 	@Override
 	public void documentChanged(DocumentEvent event) {
-		cursor.scrollToVisible();
 	}
-	
+
     public static final float DEFAULT_TEXT_SIZE=20f;
     float tabWidth,spaceWidth,lineHeight;
     float maxLineWidth;
@@ -295,6 +294,8 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 	public void replace(int pos, int length, CharSequence text) {
 		if (content.replace(pos, length, text.toString())) {
 			cursor.pos = pos + text.length();
+
+			cursor.scrollToVisible();
 			invalidate();
 		}
 	}
@@ -312,7 +313,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     }
 
     public int getMaxX() {
-		return 200 + (int)(getContentWidth() - getWidth());
+		return (int)(getContentWidth() - getWidth());
     }
 
     public int getMaxY() {
@@ -320,7 +321,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     }
 
     public float getContentWidth() {
-        return Math.max(getWidth(), maxLineWidth);
+        return Math.max(getWidth(), maxLineWidth + 200);
     }
 
     public float getContentHeight() {
@@ -337,23 +338,30 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
 	//通过光标位置计算x
 	public float getX(int pos) {
-		int line=content.getLine(pos);
-		String text=content.getText(line);
-		float[] widths=getTextWidths(text);
-		int lineStart=content.getLineStart(line);
-		float x=getLineNumberWidth();
-		for (int i=0;i < pos - lineStart;i++) {
-			if (text.charAt(i) == '\t')
-				widths[i] = tabWidth;
-			x += widths[i];
-		}
-		return x;
+		try {
+
+			int line=content.getLine(pos);
+			String text=content.getText(line);
+			float[] widths=getTextWidths(text);
+			int lineStart=content.getLineStart(line);
+			float x=getLineNumberWidth();
+			for (int i=0;i < pos - lineStart;i++) {
+				if (text.charAt(i) == '\t')
+					widths[i] = tabWidth;
+				x += widths[i];
+			}
+			return x;
+		} catch (Exception e) {}
+		return getLineNumberWidth();
 	}
 
 
 	//通过光标位置计算y
 	public float getY(int pos) {
-		return content.getLine(pos) * lineHeight;
+		try {
+			return content.getLine(pos) * lineHeight;
+		} catch (Exception e) {}
+		return 0;
 	}
 
 	//获取文本长度数组
@@ -575,11 +583,11 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
 		super.onLayout(changed, left, top, right, bottom);
-		if(changed){
+		if (changed) {
 			cursor.scrollToVisible();
 		}
 	}
-	
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         scaleGestureDetector.onTouchEvent(event);
@@ -597,28 +605,30 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
-		cursor.stopBlink();
-        showSoftInput();
-		int line=(int)Math.min(getLineCount() - 1, ((e.getY() + getCurrY()) / lineHeight));
-		String text=content.getText(line);
-		float[] widths=getTextWidths(text);
-		float x=getLineNumberWidth();
-		int col=0;
-		for (int i=0;i < widths.length;i++) {
-			if (text.charAt(i) == '\t')
-				widths[i] = tabWidth;
-			x += widths[i];
-			if (e.getX() + getCurrX() < x) {
-				col = i;
-				break;
+		showSoftInput();
+		try {
+			cursor.stopBlink();
+			int line=(int)Math.min(getLineCount() - 1, ((e.getY() + getCurrY()) / lineHeight));
+			String text=content.getText(line);
+			float[] widths=getTextWidths(text);
+			float x=getLineNumberWidth();
+			int col=0;
+			for (int i=0;i < widths.length;i++) {
+				if (text.charAt(i) == '\t')
+					widths[i] = tabWidth;
+				x += widths[i];
+				if (e.getX() + getCurrX() < x) {
+					col = i;
+					break;
+				}
 			}
-		}
-		if (e.getX() + getCurrX() > x) {
-			col = widths.length;
-		}
-		cursor.set(content.getLineStart(line)+col);
-		
-		cursor.startBlink(1000);
+			if (e.getX() + getCurrX() > x) {
+				col = widths.length;
+			}
+			cursor.set(content.getLineStart(line) + col);
+
+			cursor.startBlink(1000);
+		} catch (Exception ex) {}
 		return true;
     }
 

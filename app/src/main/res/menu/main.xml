@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/undo"
+        android:title="undo"/>
+    <item
+        android:id="@+id/redo"
+        android:title="redo"/>
     
     <item
 		android:checkable="true"
         android:id="@+id/fixedLineNumber"
         android:title="行号固定"/>
+    <item
+        android:id="@+id/readView"
+        android:title="View.java"/>
     
 </menu>
