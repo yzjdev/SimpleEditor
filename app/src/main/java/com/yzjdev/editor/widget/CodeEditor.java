@@ -31,6 +31,8 @@ import io.github.rosemoe.sora.event.EventManager;
 import io.github.rosemoe.sora.event.InterceptTarget;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocumentListener;
+import com.yzjdev.editor.text.UndoManager;
+import com.yzjdev.editor.utils.ToastUtils;
 
 public class CodeEditor extends View implements IDocumentListener, GestureDetector.OnGestureListener,ScaleGestureDetector.OnScaleGestureListener {
 
@@ -59,6 +61,8 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     GestureDetector gestureDetector;
     InputMethodManager imm;
 
+	AutoCompletePannel autoCompletePannel;
+	UndoManager undoManager;
     Content content;
     Paint paint;
     Paint.FontMetrics fontMetrics;
@@ -73,6 +77,8 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         super(context, attrs);
         this.context = context;
 
+		autoCompletePannel=new AutoCompletePannel(this);
+		undoManager=new UndoManager(this);
         inputConnection = new EditorInputConnection(this);
         eventManager = new EventManager();
         keyMetaStates = new KeyMetaStates(this);
@@ -100,6 +106,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         setFocusableInTouchMode(true);
 		content.addDocumentListener(this);
 		cursor.startBlink(0);
+		
     }
 
     @Override
@@ -292,9 +299,22 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 		replace(pos, 0, text);
 	}
 	public void replace(int pos, int length, CharSequence text) {
+		String str=content.subString(pos,pos+length);
 		if (content.replace(pos, length, text.toString())) {
-			cursor.pos = pos + text.length();
-
+			int newpos = pos + text.length();
+			if(newpos==pos){
+				//删除
+				undoManager.tracker(pos,str,UndoManager.ACTION.DEL);
+				autoCompletePannel.update();
+			}else{
+				//插入
+				undoManager.tracker(pos,text.toString(),UndoManager.ACTION.ADD);
+				//显示补全面板
+				autoCompletePannel.show();
+				
+			}
+			cursor.pos=newpos;
+			
 			cursor.scrollToVisible();
 			invalidate();
 		}
@@ -306,6 +326,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
     public void setText(CharSequence text) {
         content.setText(text);
+		undoManager.reset();
     }
 
     public CharSequence getText() {
@@ -335,6 +356,14 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     public int getCurrY() {
         return scroller.getCurrY();
     }
+	
+	public float getCursorX(){
+		return getX(cursor.pos);
+	}
+	
+	public float getCursorY(){
+		return getY(cursor.pos);
+	}
 
 	//通过光标位置计算x
 	public float getX(int pos) {
@@ -389,6 +418,15 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     public int getLineCount() {
         return content.getLineCount();
     }
+	
+	public void undo(){
+		undoManager.undo();
+	}
+	
+	public void redo(){
+		undoManager.redo();
+	}
+	
 
     public boolean isEditable() {
         return onCheckIsTextEditor() && isEnabled();
@@ -433,48 +471,9 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return keyMetaStates;
     }
 
-	ExtractedTextRequest mExtracting;
-	/**
-     * Set request needed to update when editor updates selection
-     */
-    protected void setExtracting(@Nullable ExtractedTextRequest request) {
-        mExtracting = request;
-    }
-
-    /**
-     * Extract text in editor for input method
-     */
-    protected ExtractedText extractText(@NonNull ExtractedTextRequest request) {
-        Cursor cur = getCursor();
-        ExtractedText text = new ExtractedText();
-        int selBegin = cur.getLeft();
-        int selEnd = cur.getRight();
-        int startOffset;
-        if (request.hintMaxChars == 0) {
-            request.hintMaxChars = 50000000;
-        }
-        startOffset = 0;
-        text.text = inputConnection.getTextRegion(startOffset, startOffset + request.hintMaxChars, request.flags);
-        text.startOffset = startOffset;
-        text.selectionStart = selBegin - startOffset;
-        text.selectionEnd = selEnd - startOffset;
-        if (selBegin != selEnd) {
-            text.flags |= ExtractedText.FLAG_SELECTING;
-        }
-        return text;
-    }
-
-	protected void onCloseConnection() {
-        setExtracting(null);
-        invalidate();
-    }
-
-	protected void updateSelection() {
-        int candidatesStart = -1, candidatesEnd = -1;
-        imm.updateSelection(this, selection.getSelectionStart(), selection.getSelectionEnd(), candidatesStart, candidatesEnd);
-        Thread.dumpStack();
-    }
-
+	public AutoCompletePannel getAutoCompletePannel(){
+		return autoCompletePannel;
+	}
 
     /** 重写方法 手势 输入法 Scroller
      */
@@ -566,12 +565,6 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-		outAttrs.initialSelStart = getCursor() != null ? getCursor().getLeft() : 0;
-        outAttrs.initialSelEnd = getCursor() != null ? getCursor().getRight() : 0;
-        outAttrs.initialCapsMode = inputConnection.getCursorCapsMode(0);
-
-		inputConnection.reset();
-		setExtracting(null);
         return inputConnection;
     }
 
@@ -606,6 +599,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
 		showSoftInput();
+		autoCompletePannel.dismiss();
 		try {
 			cursor.stopBlink();
 			int line=(int)Math.min(getLineCount() - 1, ((e.getY() + getCurrY()) / lineHeight));

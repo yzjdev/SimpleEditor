@@ -64,8 +64,6 @@ public class Cursor {
 
 	public void scrollToVisible() {
 		try {
-
-
 			float x=editor.getX(editor.getSelection().isBatchEdit() ?editor.getSelection().end: pos) - editor.getLineNumberWidth();
 			float y=editor.getY(editor.getSelection().isBatchEdit() ?editor.getSelection().end: pos);
 			int width=editor.getWidth();

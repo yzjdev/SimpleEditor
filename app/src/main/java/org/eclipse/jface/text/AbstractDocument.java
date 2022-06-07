@@ -26,9 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.PatternSyntaxException;
 
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.ListenerList;
-import org.eclipse.core.runtime.SafeRunner;
 
 
 /**
@@ -1698,17 +1696,7 @@ public abstract class AbstractDocument implements IDocument, IDocumentExtension,
 	 * @since 3.6
 	 */
 	private static void log(final Exception ex) {
-		SafeRunner.run(new ISafeRunnable() {
-			@Override
-			public void run() throws Exception {
-				throw ex;
-			}
-
-			@Override
-			public void handleException(Throwable exception) {
-				// NOTE: Logging is done by SafeRunner
-			}
-		});
+		
 	}
 
 }

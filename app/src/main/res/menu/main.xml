@@ -2,10 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/undo"
-        android:title="undo"/>
+        android:title="undo"
+		android:showAsAction="always"/>
     <item
         android:id="@+id/redo"
-        android:title="redo"/>
+        android:title="redo"
+		android:showAsAction="always"/>
     
     <item
 		android:checkable="true"

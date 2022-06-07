@@ -1,18 +1,22 @@
 /*******************************************************************************
  * Copyright (c) 2004, 2016 IBM Corporation and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
  * 
  * Contributors:
  *     IBM Corporation - initial API and implementation
+ *     Mikael Barbero (Eclipse Foundation) - Bug 509234
  *******************************************************************************/
 package org.eclipse.core.runtime;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Spliterator;
+import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * This class is a thread safe list that is designed for storing lists of listeners.
@@ -22,7 +26,7 @@ import java.util.Spliterator;
  * to the underlying array data structure for reading, with the trust that they will 
  * not modify the underlying array.
  * <p>
- * <a name="same"></a>A listener list handles the <i>same</i> listener being added 
+ * A listener list handles the <i>same</i> listener being added 
  * multiple times, and tolerates removal of listeners that are the same as other
  * listeners in the list.  For this purpose, listeners can be compared with each other 
  * using either equality or identity, as specified in the list constructor.
@@ -33,7 +37,7 @@ import java.util.Spliterator;
  * <code>FooListener#eventHappened(Event)</code>, is:
  * </p>
  * <pre>
-ListenerList&lt;FooListener&gt; fooListeners = new ListenerList<>();
+ListenerList&lt;FooListener&gt; fooListeners = new ListenerList&lt;&gt;();
 //...
 for (FooListener listener : fooListeners) {
 	listener.eventHappened(event);
@@ -52,12 +56,6 @@ for (FooListener listener : fooListeners) {
  * @since org.eclipse.equinox.common 3.2
  */
 public class ListenerList<E> implements Iterable<E> {
-
-	@Override
-	public Spliterator<E> spliterator() {
-		return null;
-	}
-
 
 	/**
 	 * The empty array singleton instance.
@@ -249,5 +247,44 @@ public class ListenerList<E> implements Iterable<E> {
 	 */
 	public synchronized void clear() {
 		listeners = EmptyArray;
+	}
+
+	/**
+	 * Returns a Spliterator covering the registered listeners.
+	 * <p>
+	 * The spliterator reports Spliterator.SIZED, Spliterator.SUBSIZED, Spliterator.ORDERED, and Spliterator.IMMUTABLE
+	 * 
+	 * @return a spliterator for listeners
+	 * @since org.eclipse.equinox.common 3.9
+	 */
+	@Override
+	@SuppressWarnings("unchecked")
+	public Spliterator<E> spliterator() {
+		return (Spliterator<E>) Arrays.spliterator(listeners);
+	}
+
+	/**
+	 * Returns a sequential {@code Stream} over the registered listeners.
+	 * 
+	 * @return a sequential {@code Stream} over the registered listeners.
+	 * @since org.eclipse.equinox.common 3.9
+	 */
+	public Stream<E> stream() {
+		return StreamSupport.stream(spliterator(), false);
+	}
+
+	/**
+	 * Returns a parallel {@code Stream} over the registered listeners.
+	 * 
+	 * @return a parallel {@code Stream} over the registered listeners.
+	 * @since org.eclipse.equinox.common 3.9
+	 */
+	public Stream<E> parallelStream() {
+		return StreamSupport.stream(spliterator(), true);
+	}
+
+	@Override
+	public String toString() {
+		return Arrays.toString(listeners);
 	}
 }
