@@ -16,5 +16,8 @@
     <item
         android:id="@+id/readView"
         android:title="View.java"/>
+    <item
+        android:id="@+id/clearText"
+        android:title="清空"/>
     
 </menu>

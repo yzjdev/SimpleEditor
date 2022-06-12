@@ -41,6 +41,9 @@ public class MainActivity extends Activity {
 			case R.id.redo:
 				editor.redo();
 				break;
+			case R.id.clearText:
+				editor.setText("");
+				break;
 		}
 		return super.onOptionsItemSelected(item);
 	}

@@ -82,10 +82,11 @@ public class AutoCompletePannel implements AdapterView.OnItemClickListener {
 			pop.dismiss();
 	}
 	
-	Point computeLocation(){
-		Point point=new Point();
-		int[] offset=new int[2];
-		//获取editor相对父控件坐标
+	public void update(){
+		
+	}
+
+	public void show() {
 		int[] outLocation=new int[2];
 		editor.getLocationOnScreen(outLocation);
 
@@ -94,32 +95,17 @@ public class AutoCompletePannel implements AdapterView.OnItemClickListener {
 
 		float cursorY=(int)editor.getCursorY() - editor.getCurrY();
 
-		if (cursorY > editor.getHeight() / 2+editor.lineHeight) {
+		if (cursorY > editor.getHeight() / 2) {
 			//显示在当前行上方
-			yoff += cursorY - pop.getHeight();
+			yoff += (cursorY - pop.getHeight());
 		} else {
 			//显示在当前行下方
-			yoff += cursorY + editor.lineHeight;	
+			yoff += (cursorY + editor.lineHeight);	
 		}
-		point.x=(int)xoff;
-		point.y=(int)yoff;
-		return point;
-	}
-	public void update(){
-		int xoff=computeLocation().x;
-		int yoff=computeLocation().y;
 		if (pop.isShowing()) {
-			pop.update(xoff, yoff, -2, -2);
-		}
-	}
-
-	public void show() {
-		int xoff=computeLocation().x;
-		int yoff=computeLocation().y;
-		if (pop.isShowing()) {
-			pop.update(xoff, yoff, -2, -2);
+			pop.update((int)xoff, (int)yoff, -2, -2);
 		} else {
-			pop.showAtLocation(editor, Gravity.NO_GRAVITY, xoff, yoff);
+			pop.showAtLocation(editor, Gravity.NO_GRAVITY, (int)xoff, (int)yoff);
 		}
 
 	}
@@ -151,7 +137,6 @@ public class AutoCompletePannel implements AdapterView.OnItemClickListener {
 		public void setData(List<Data> datas) {
 			AutoCompletePannel.this.datas = datas;
 		}
-
 
 	}
 

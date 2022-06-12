@@ -305,18 +305,20 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 			if(newpos==pos){
 				//删除
 				undoManager.tracker(pos,str,UndoManager.ACTION.DEL);
-				autoCompletePannel.update();
 			}else{
 				//插入
 				undoManager.tracker(pos,text.toString(),UndoManager.ACTION.ADD);
-				//显示补全面板
-				autoCompletePannel.show();
 				
 			}
+			
 			cursor.pos=newpos;
 			
 			cursor.scrollToVisible();
+
+			//显示补全面板
+			autoCompletePannel.show();
 			invalidate();
+			
 		}
 	}
 
@@ -325,8 +327,11 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 	}
 
     public void setText(CharSequence text) {
-        content.setText(text);
+		content.setText(text);
 		undoManager.reset();
+		maxLineWidth=0;
+		cursor.pos=0;
+		autoCompletePannel.dismiss();
     }
 
     public CharSequence getText() {

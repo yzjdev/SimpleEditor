@@ -84,7 +84,7 @@ public class Cursor {
 			} else if (y - currY < 0) {
 				dy = (int)(y - currY);
 			}	
-			editor.getScroller().startScroll(currX, currY, dx, dy);
+			editor.getScroller().startScroll(currX, currY, dx,dy);
 			editor.invalidate();
 		} catch (Exception e) {}
 	}
