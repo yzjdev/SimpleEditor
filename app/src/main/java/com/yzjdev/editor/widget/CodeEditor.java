@@ -1,7 +1,5 @@
 package com.yzjdev.editor.widget;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -34,15 +32,7 @@ import org.eclipse.jface.text.IDocumentListener;
 import com.yzjdev.editor.text.UndoManager;
 import com.yzjdev.editor.utils.ToastUtils;
 
-public class CodeEditor extends View implements IDocumentListener, GestureDetector.OnGestureListener,ScaleGestureDetector.OnScaleGestureListener {
-
-	@Override
-	public void documentAboutToBeChanged(DocumentEvent event) {
-	}
-
-	@Override
-	public void documentChanged(DocumentEvent event) {
-	}
+public class CodeEditor extends View implements GestureDetector.OnGestureListener,ScaleGestureDetector.OnScaleGestureListener {
 
     public static final float DEFAULT_TEXT_SIZE=20f;
     float tabWidth,spaceWidth,lineHeight;
@@ -61,7 +51,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     GestureDetector gestureDetector;
     InputMethodManager imm;
 
-	AutoCompletePannel autoCompletePannel;
+	//AutoCompletePannel autoCompletePannel;
 	UndoManager undoManager;
     Content content;
     Paint paint;
@@ -77,7 +67,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         super(context, attrs);
         this.context = context;
 
-		autoCompletePannel=new AutoCompletePannel(this);
+		//autoCompletePannel=new AutoCompletePannel(this);
 		undoManager=new UndoManager(this);
         inputConnection = new EditorInputConnection(this);
         eventManager = new EventManager();
@@ -104,7 +94,6 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
         setFocusable(true);
         setFocusableInTouchMode(true);
-		content.addDocumentListener(this);
 		cursor.startBlink(0);
 		
     }
@@ -284,10 +273,7 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
     }
 
 	public void delete() {
-		if (selection.isBatchEdit())
-			delete(selection.getSelectionStart(), selection.length());
-		else
-			delete(cursor.pos - 1, 1);
+		delete(cursor.pos - 1, 1);
 	}
 	public void delete(int pos, int length) {
 		replace(pos, length, "");
@@ -302,7 +288,8 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 		String str=content.subString(pos,pos+length);
 		if (content.replace(pos, length, text.toString())) {
 			int newpos = pos + text.length();
-			if(newpos==pos){
+			boolean isDelAction=newpos==pos;
+			if(isDelAction){
 				//删除
 				undoManager.tracker(pos,str,UndoManager.ACTION.DEL);
 			}else{
@@ -315,10 +302,11 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 			
 			cursor.scrollToVisible();
 
-			//显示补全面板
-			autoCompletePannel.show();
 			invalidate();
-			
+
+			//显示补全面板
+			//if(isDelAction)autoCompletePannel.dismiss();
+			//else autoCompletePannel.show();
 		}
 	}
 
@@ -327,11 +315,12 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 	}
 
     public void setText(CharSequence text) {
+		
 		content.setText(text);
 		undoManager.reset();
 		maxLineWidth=0;
 		cursor.pos=0;
-		autoCompletePannel.dismiss();
+		//autoCompletePannel.dismiss();
     }
 
     public CharSequence getText() {
@@ -476,9 +465,10 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
         return keyMetaStates;
     }
 
+	/*
 	public AutoCompletePannel getAutoCompletePannel(){
 		return autoCompletePannel;
-	}
+	}*/
 
     /** 重写方法 手势 输入法 Scroller
      */
@@ -603,8 +593,10 @@ public class CodeEditor extends View implements IDocumentListener, GestureDetect
 
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
+		
+		
 		showSoftInput();
-		autoCompletePannel.dismiss();
+		//autoCompletePannel.dismiss();
 		try {
 			cursor.stopBlink();
 			int line=(int)Math.min(getLineCount() - 1, ((e.getY() + getCurrY()) / lineHeight));

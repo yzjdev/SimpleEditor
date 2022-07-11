@@ -23,8 +23,6 @@
  */
 package io.github.rosemoe.sora.event;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -71,7 +69,7 @@ public final class EventManager {
      * Create an EventManager with the given parent.
      * Null for no parent.
      */
-    public EventManager(@Nullable EventManager parent) {
+    public EventManager( EventManager parent) {
         receivers = new HashMap<>();
         this.parent = parent;
         lock = new ReentrantReadWriteLock();
@@ -112,7 +110,7 @@ public final class EventManager {
      * Get root manager and dispatch the given event
      * @see #dispatchEvent(Event)
      */
-    public <T extends Event> int dispatchEventFromRoot(@NonNull T event) {
+    public <T extends Event> int dispatchEventFromRoot( T event) {
         return getRootManager().dispatchEvent(event);
     }
 
@@ -138,9 +136,9 @@ public final class EventManager {
     /**
      * Get receivers container of a given event type safely
      */
-    @NonNull
+    
     @SuppressWarnings("unchecked")
-    <T extends Event> Receivers<T> getReceivers(@NonNull Class<T> type) {
+    <T extends Event> Receivers<T> getReceivers( Class<T> type) {
         lock.readLock().lock();
         Receivers<T> result;
         try {
@@ -170,7 +168,7 @@ public final class EventManager {
      * @param receiver Receiver of event
      * @param <T> Event type
      */
-    public <T extends Event> SubscriptionReceipt<T> subscribeEvent(@NonNull Class<T> eventType, @NonNull EventReceiver<T> receiver) {
+    public <T extends Event> SubscriptionReceipt<T> subscribeEvent( Class<T> eventType,  EventReceiver<T> receiver) {
         Receivers<T> receivers = getReceivers(eventType);
         receivers.lock.writeLock().lock();
         try {
@@ -192,7 +190,7 @@ public final class EventManager {
      * @return The event's intercept targets
      */
     @SuppressWarnings("unchecked")
-    public <T extends Event> int dispatchEvent(@NonNull T event) {
+    public <T extends Event> int dispatchEvent( T event) {
         // Safe cast
         Receivers<T> receivers = getReceivers((Class<T>)event.getClass());
         receivers.lock.readLock().lock();

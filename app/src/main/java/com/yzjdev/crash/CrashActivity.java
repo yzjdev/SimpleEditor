@@ -17,6 +17,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 //<activity android:name="com.yzjdev.crash.CrashActivity"/>
 public class CrashActivity extends Activity implements MenuItem.OnMenuItemClickListener {
@@ -108,7 +109,8 @@ public class CrashActivity extends Activity implements MenuItem.OnMenuItemClickL
 
 	public static void actionStart(Context context, String errorMsg) {
 		Intent intent = new Intent(context, CrashActivity.class);
-		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+		int flags=Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK;
+		intent.addFlags(flags);
 		intent.putExtra(CrashActivity.EXTRA_CRASH_INFO, errorMsg);
 		context.startActivity(intent);
 	}

@@ -23,7 +23,6 @@
  */
 package io.github.rosemoe.sora.event;
 
-import android.annotation.NonNull;
 import com.yzjdev.editor.widget.CodeEditor;
 import java.util.Objects;
 
@@ -40,11 +39,11 @@ public abstract class Event {
     private final CodeEditor mEditor;
     private int mInterceptTargets;
 
-    public Event(@NonNull CodeEditor editor) {
+    public Event( CodeEditor editor) {
         this(editor, System.currentTimeMillis());
     }
 
-    public Event(@NonNull CodeEditor editor, long eventTime) {
+    public Event( CodeEditor editor, long eventTime) {
         mEditor = Objects.requireNonNull(editor);
         mEventTime = eventTime;
         mInterceptTargets = 0;
@@ -60,7 +59,7 @@ public abstract class Event {
     /**
      * Get the editor
      */
-    @NonNull
+    
     public CodeEditor getEditor() {
         return mEditor;
     }

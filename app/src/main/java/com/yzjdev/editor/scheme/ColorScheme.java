@@ -7,9 +7,8 @@ public abstract class ColorScheme {
 
     public static final int COLOR_LINE_CURRENT=1;
 
-    SparseIntArray colors;
+    SparseIntArray colors=new SparseIntArray();
     public ColorScheme() {
-        colors = new SparseIntArray<>();
         apply();
     }
 

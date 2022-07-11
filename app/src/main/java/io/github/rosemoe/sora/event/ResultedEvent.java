@@ -23,7 +23,6 @@
  */
 package io.github.rosemoe.sora.event;
 
-import android.annotation.NonNull;
 import com.yzjdev.editor.widget.CodeEditor;
 
 /**
@@ -34,7 +33,7 @@ public abstract class ResultedEvent<T> extends Event {
 
     private T result;
 
-    public ResultedEvent(@NonNull CodeEditor editor) {
+    public ResultedEvent( CodeEditor editor) {
         super(editor);
     }
 

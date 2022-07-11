@@ -6,6 +6,12 @@ import org.eclipse.jface.text.BadLocationException;
 import android.widget.Toast;
 import android.text.TextUtils;
 import org.eclipse.jface.text.IDocumentListener;
+import com.yzjdev.editor.lang.java.JavaHighlighter;
+import java.util.List;
+import java.util.ArrayList;
+import android.app.AlertDialog;
+import android.graphics.Color;
+import com.yzjdev.editor.utils.ToastUtils;
 
 public class Content implements CharSequence {
 
@@ -19,11 +25,15 @@ public class Content implements CharSequence {
 	public void addDocumentListener(IDocumentListener l){
 		doc.addDocumentListener(l);
 	}
+    
+    
     public void setText(CharSequence text) {
-        doc.set(text.toString());
-		
+		doc.set(text.toString());   
     }
 	
+    
+    
+    
 	public boolean replace(int pos,int length,String text){
 		try {
 			doc.replace(pos, length, text);

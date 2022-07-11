@@ -23,7 +23,6 @@
  */
 package io.github.rosemoe.sora.event;
 
-import android.annotation.NonNull;
 import java.lang.ref.WeakReference;
 
 /**
@@ -38,7 +37,7 @@ public class SubscriptionReceipt<R extends Event> {
     private final WeakReference<EventReceiver<R>> receiver;
     private final EventManager manager;
 
-    SubscriptionReceipt(@NonNull EventManager mgr, @NonNull Class<R> clazz, @NonNull EventReceiver<R> receiver) {
+    SubscriptionReceipt( EventManager mgr,  Class<R> clazz,  EventReceiver<R> receiver) {
         this.clazz = clazz;
         this.receiver = new WeakReference<>(receiver);
         this.manager = mgr;
